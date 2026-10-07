@@ -1,80 +1,87 @@
 <!doctype html>
 <!-- SPDX-License-Identifier: GPL-3.0-only
-     Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments -->
+     FM1 Quest installer. Based on the SLOOP installer (isod89/sloop-fm1), which is based on Felucca
+     (Leo Kuroshita (@kurogedelic), Hügelton Instruments). -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SLOOP installer</title>
+<title>FM1 Quest installer</title>
 <style>
-  :root { --bg: #000; --fg: #f2f2f2; --dim: #8a8a92; --tile: #16161a; --line: #2a2a30;
-          --blue: #287cff; --green: #1ecc70; --yellow: #ffc618; --orange: #ff621a; --red: #ff2c34; }
-  :root[data-theme="light"] { --bg: #f4f4f2; --fg: #111; --dim: #666; --tile: #e6e6e2; --line: #d0d0cc; }
+  @font-face { font-family: "Pixelify Sans"; src: url(../../assets/PixelifySans-400.ttf) format("truetype"); font-display: swap; }
+  @font-face { font-family: "Jacquarda Bastarda 9"; src: url(../../assets/JacquardaBastarda9.ttf) format("truetype"); font-display: swap; }
+  :root { --bg: #1e1418; --fg: #f2e2c4; --dim: #a89080; --tile: #3a2620; --line: #5a3a28; --gold: #c8963c; --hi: #f0c860;
+          --blue: #5a8ad0; --green: #7ab04e; --yellow: #f0c860; --orange: #e0803a; --red: #e0503c; }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--fg);
-         font: 15px/1.6 "Helvetica Neue", -apple-system, BlinkMacSystemFont, Arial, sans-serif; }
-  main { max-width: 560px; margin: 0 auto; padding: 32px 16px 48px; }
-  .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  .logo svg { display: block; width: 220px; height: auto; }
-  .logo rect:first-child { fill: transparent; }
-  .lang { font-size: 12px; color: var(--dim); cursor: pointer; text-decoration: underline; background: none;
-          border: 0; padding: 0; text-transform: lowercase; }
-  .strip { display: flex; height: 4px; margin: 20px 0 24px; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.55 "Pixelify Sans", ui-monospace, monospace; }
+  main { max-width: 600px; margin: 0 auto; padding: 24px 16px 56px; }
+  .logo { display: flex; justify-content: center; margin: 4px 0 6px; }
+  .logo img { width: min(340px, 86%); height: auto; image-rendering: pixelated; filter: drop-shadow(0 3px 0 #000) drop-shadow(0 0 2px #000); }
+  .strip { display: flex; height: 5px; margin: 14px 0 22px; }
   .strip i { flex: 1; } .strip i:nth-child(1) { background: var(--blue); } .strip i:nth-child(2) { background: var(--green); }
   .strip i:nth-child(3) { background: var(--yellow); } .strip i:nth-child(4) { background: var(--orange); }
-  h1 { font-size: 13px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); margin: 0 0 8px; }
-  .lead { font-size: 20px; line-height: 1.35; margin: 0 0 24px; }
-  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 0 0 28px; }
-  .tile { background: var(--tile); padding: 10px 10px 12px; border-top: 3px solid var(--c); min-height: 92px; }
-  .tile b { display: block; font-size: 22px; font-weight: 600; color: var(--c); line-height: 1.1; }
-  .tile span { display: block; font-size: 12px; color: var(--dim); text-transform: lowercase; margin-top: 4px; }
+  h1 { font: 400 26px/1.15 "Jacquarda Bastarda 9", serif; color: var(--hi); margin: 0 0 8px; letter-spacing: .02em; }
+  .lead { font-size: 17px; margin: 0 0 20px; }
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 0 0 26px; }
+  .tile { background: var(--tile); padding: 10px 10px 12px; border: 1px solid var(--gold); border-top: 4px solid var(--c); min-height: 96px; }
+  .tile b { display: block; font-size: 20px; font-weight: 600; color: var(--c); line-height: 1.1; }
+  .tile span { display: block; font-size: 13px; color: var(--dim); margin-top: 4px; }
   p { margin: 0 0 14px; }
-  button#go { font: 600 15px/1 inherit; font-family: inherit; background: var(--orange); color: #000; border: 0;
-              padding: 16px 0; width: 100%; cursor: pointer; letter-spacing: .08em; text-transform: uppercase; }
-  button#go:disabled { background: var(--tile); color: var(--dim); cursor: default; }
+  .panel { background: var(--tile); border: 1px solid var(--gold); box-shadow: inset 0 0 0 2px var(--bg), inset 0 0 0 3px #6a4030; padding: 14px 16px; margin: 0 0 18px; }
+  button#go { font: 600 17px/1 "Pixelify Sans", monospace; background: var(--hi); color: #1e1418; border: 2px solid var(--gold);
+              padding: 16px 0; width: 100%; cursor: pointer; letter-spacing: .06em; text-transform: uppercase; }
+  button#go:disabled { background: #2e2226; color: var(--dim); border-color: var(--line); cursor: default; }
   #status { margin-top: 14px; min-height: 1.6em; font-variant-numeric: tabular-nums; }
-  .small { color: var(--dim); font-size: 12.5px; }
-  .small a, a { color: inherit; }
-  progress { -webkit-appearance: none; appearance: none; width: 100%; height: 6px; margin-top: 16px; border: 0; background: var(--tile); }
-  progress::-webkit-progress-bar { background: var(--tile); }
+  .small { color: var(--dim); font-size: 14px; }
+  a { color: var(--hi); }
+  .small a { color: var(--fg); }
+  progress { -webkit-appearance: none; appearance: none; width: 100%; height: 8px; margin-top: 16px; border: 0; background: #2e2226; }
+  progress::-webkit-progress-bar { background: #2e2226; }
   progress::-webkit-progress-value { background: var(--orange); }
   progress::-moz-progress-bar { background: var(--orange); }
-  pre { color: var(--dim); font-size: 11px; white-space: pre-wrap; margin-top: 12px; max-height: 160px; overflow: auto; }
+  pre { color: var(--dim); font-size: 12px; white-space: pre-wrap; margin-top: 12px; max-height: 160px; overflow: auto; }
   hr { border: 0; border-top: 1px solid var(--line); margin: 28px 0 18px; }
-  .ed { display: inline-block; margin: 8px 0 0; padding: 10px 14px; background: var(--tile); text-decoration: none; }
-  details { margin: 22px 0 0; } summary { cursor: pointer; font-weight: 600; }
-  button#stock-go { font: 600 14px/1 inherit; font-family: inherit; background: var(--tile); color: var(--fg); border: 1px solid var(--line);
-                    padding: 12px 16px; cursor: pointer; }
-  button#stock-go:disabled { color: var(--dim); cursor: default; }
-  @media (max-width: 420px) { .tiles { grid-template-columns: repeat(2, 1fr); } .logo svg { width: 170px; } }
+  .links { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 0; }
+  .ed { display: inline-block; padding: 10px 14px; background: var(--tile); border: 1px solid var(--gold); text-decoration: none; color: var(--fg); }
+  .ed:hover { background: #4a3228; }
+  details { margin: 22px 0 0; } summary { cursor: pointer; font-weight: 600; color: var(--hi); }
+  button#stock-go { font: 600 14px/1 "Pixelify Sans", monospace; background: var(--tile); color: var(--fg); border: 1px solid var(--gold); padding: 12px 16px; cursor: pointer; }
+  button#stock-go:disabled { color: var(--dim); border-color: var(--line); cursor: default; }
+  @media (max-width: 460px) { .tiles { grid-template-columns: repeat(2, 1fr); } }
 </style>
 </head>
 <body>
 <main>
-  <div class="top"><div class="logo"><!--LOGO--></div><button class="lang" id="lang"></button></div>
+  <div class="logo"><img src="../../assets/logo.png" alt="FM1 Quest"></div>
   <div class="strip"><i></i><i></i><i></i><i></i></div>
-  <!--STUDIO_GUIDE-->
-  <!--BANNER-->
   <h1>Firmware for the M-VAVE FM-1</h1>
-  <p class="lead">A groovebox you play live: four tracks — three synths and a drum machine — 9 synth engines, 68 sounds, 37 drum kits from 808 to techno, amapiano and ambient, your own samples, 16 punch-in effects. House, techno, hip-hop, drum &amp; bass, synthwave, lo-fi, ambient: make what you want. No factory patterns, nothing to load: everything you hear, you play.</p>
+  <p class="lead">Your groovebox as a pixel-art RPG. Four tracks are four heroes, every lit step is an attack, the tempo sets how fast the party walks,
+  the key picks the biome, effects bring the weather, and recording a loop is a boss fight. Every SLOOP function stays where it was, with the same controls.</p>
   <div class="tiles">
-    <div class="tile" style="--c: var(--blue)"><b>68</b><span>sounds, 9 engines, your samples</span></div>
-    <div class="tile" style="--c: var(--green)"><b>37</b><span>drum kits, 909 to afro</span></div>
-    <div class="tile" style="--c: var(--yellow)"><b>16</b><span>punch-in fx: hold fx + key</span></div>
-    <div class="tile" style="--c: var(--orange)"><b>rec</b><span>no click: the loop follows you</span></div>
+    <div class="tile" style="--c: var(--blue)"><b>tracks</b><span>mage, archer, cleric and warrior play your four tracks</span></div>
+    <div class="tile" style="--c: var(--green)"><b>key</b><span>major forest, minor cave, dorian coast, phrygian ruins</span></div>
+    <div class="tile" style="--c: var(--yellow)"><b>fx</b><span>distortion storms, chorus mist, delay echoes, reverb rain</span></div>
+    <div class="tile" style="--c: var(--orange)"><b>rec</b><span>a wild loop appears: record it to beat the King Slime</span></div>
   </div>
-  <p data-t="intro"></p>
-  <p data-t="warn"></p>
-  <p><button id="go" disabled data-t="install"></button></p>
-  <progress id="bar" max="100" value="0"></progress>
-  <p id="status"></p>
-  <pre id="log"></pre>
-  <a class="ed" href="../editor/" data-t="editor"></a>
+  <!--BANNER-->
+  <div class="panel">
+    <p data-t="intro"></p>
+    <p data-t="warn"></p>
+    <p><button id="go" disabled data-t="install"></button></p>
+    <progress id="bar" max="100" value="0"></progress>
+    <p id="status"></p>
+    <pre id="log"></pre>
+  </div>
+  <p class="small" data-t="beta"></p>
+  <div class="links">
+    <a class="ed" href="../editor/" data-t="editor"></a>
+    <a class="ed" href="../../emulator/">Try it in the browser (emulator)</a>
+    <a class="ed" href="https://github.com/hericdk/fm1-quest" target="_blank" rel="noopener">Source on GitHub</a>
+  </div>
   <hr>
   <p class="small" data-t="direct"></p>
-  <p class="small" data-t="beta"></p>
   <p class="small"><span data-t="brick"></span>
-    <a href="https://github.com/kurogedelic/FM-1-transporter" target="_blank" rel="noopener">FM-1-transporter</a></p>
+    <a href="https://github.com/kurogedelic/FM-1-transporter" target="_blank" rel="noopener">FM-1-transporter</a>. Hold OCT&minus; alone while switching the FM-1 on for the USB rescue.</p>
   <details>
     <summary data-t="stockTitle"></summary>
     <p class="small" data-t="stockHelp"></p>
@@ -86,58 +93,28 @@
     <p><button id="stock-go" disabled data-t="stockGo"></button></p>
     <p class="small" data-t="back"></p>
   </details>
-  <p class="small">SLOOP is based on Felucca by Leo Kuroshita (@kurogedelic), <a href="https://hugelton.com" target="_blank" rel="noopener">Hügelton Instruments</a>.
-    Hold OCT− alone while switching on for USB rescue.<br>
-    Font: Terminus (Dimitar Toshkov Zhekov, SIL OFL 1.1). Samples: Versilian Studios VSCO-2 Community Edition and VCSL (CC0 1.0), and the Hügelton Sample Pack (© Hügelton Instruments, not CC0).<br>
-    M-VAVE and FM-1 are trademarks of their respective owners; SLOOP is not affiliated with them.<br>
-    <span data-t="license"></span> <a href="https://github.com/hugelton/Felucca" target="_blank" rel="noopener">github.com/hugelton/Felucca</a></p>
+  <hr>
+  <p class="small"><b>FM1 Quest</b> is based on <a href="https://github.com/isod89/sloop-fm1" target="_blank" rel="noopener">SLOOP</a> by isod89, which is based on
+    <a href="https://github.com/hugelton/Felucca" target="_blank" rel="noopener">Felucca</a> by Leo Kuroshita (@kurogedelic),
+    <a href="https://hugelton.com" target="_blank" rel="noopener">H&uuml;gelton Instruments</a>. The browser emulator builds on
+    <a href="https://github.com/sabliran/sloop-web-emu" target="_blank" rel="noopener">sloop-web-emu</a> by sabliran.<br>
+    Fonts: Pixelify Sans and Jacquarda Bastarda 9 (SIL OFL 1.1), Terminus (Dimitar Toshkov Zhekov, SIL OFL 1.1).
+    Samples: Versilian Studios VSCO-2 Community Edition and VCSL (CC0 1.0), and the H&uuml;gelton Sample Pack (&copy; H&uuml;gelton Instruments, not CC0).<br>
+    M-VAVE and FM-1 are trademarks of their respective owners; FM1 Quest is not affiliated with them.<br>
+    <span data-t="license"></span> <a href="https://github.com/hericdk/fm1-quest" target="_blank" rel="noopener">github.com/hericdk/fm1-quest</a></p>
 </main>
 <script type="module">
 /*LIB*/
 const $ = (id) => document.getElementById(id);
 const TEXT = {
-  ja: {
-    intro: "FM-1 を USB で接続してください。（Chrome か Edge で使えます）",
-    warn: "書き込み中は USB を抜かないでください。",
-    install: "インストール", other: "English",
-    editor: "エディタ（インストール後、パソコンから音色やシーケンスを編集）",
-    direct: "USB ケーブルはパソコンに直接つないでください。Probe や Transporter などの機材は不要です。",
-    brick: "万一インストールに失敗して起動しなくなった場合は、復旧に Transporter が必要です:",
-    beta: "これはベータ版で、不安定な場合があります。このカスタムファームウェアを使ったことで FM-1 が壊れたり不具合が起きたりしても、作者は一切の責任を負いません。自己責任でお使いください。",
-    back: "公式ファームウェアに戻すには、M-VAVE 公式のアップデーター M-UPGRADE（Downloads → PC Software → M-UPGRADE）と公式ファームウェア（PC Firmware → FM-1 V15）が必要です。",
-    nomidi: "このブラウザでは使えません。Chrome か Edge で開いてください。", loadfail: "読み込めませんでした: ",
-    start: "開始します", verify: "確認中", loader: "書き込みモードに切り替え中", write: "書き込み中",
-    reboot: "再起動中", done: "完了しました", stopped: "途中で止まりました。USB を挿し直してもう一度押してください。",
-    error: "エラー: ",
-    denied: "MIDI（SysEx）の使用が許可されませんでした。アドレスバーのサイト設定で MIDI を許可して、もう一度押してください。",
-    notfound: "FM-1 が見つかりません。USB ケーブル（データ通信用か）を確かめ、MIDI を使う他のアプリを閉じてから、もう一度押してください。",
-    model: "接続されている機器は FM-1 ではありません。",
-    lost: "USB の接続が切れました。挿し直してもう一度押してください。",
-    noloader: "書き込みモードの FM-1 が見つかりません。USB を挿し直してもう一度押してください（終わるまで書き込みモードのままです）。",
-    noreturn: "FM-1 が戻ってきません。電源を入れ直してください。",
-    mismatch: "書き込みは終わりましたが、FM-1 が別のバージョンを報告しています: ",
-    foreign: "FM-1 は別のファームウェアの書き込みモードです。そのアップデーター（M-UPGRADE）で書き込みを終えてから、もう一度インストールしてください: ",
-    badpkg: "インストールするファイルが壊れています。ページを再読み込みしてください。",
-    leave: "書き込み中です。ページを閉じないでください。",
-    license: "GPL-3.0、無保証。ソース:",
-    stockTitle: "公式ファームウェア（V15）に戻す",
-    stockHelp: "M-VAVE のサイトから公式の FM-1 V15 をダウンロードし、中の FM-1.fwsc（変更していないもの）を選んでください。ファイルはこのブラウザの中で確認され、どこにも送られません。",
-    stockBackup: "公式ファームウェアは SLOOP の曲・プロジェクト・サンプルを開けません。先にエディタでバックアップを保存してください（Projects → Backup）。SLOOP を入れ直せば、エディタから復元できます。",
-    stockEditor: "エディタを開いてバックアップする", stockSaved: "バックアップをパソコンに保存しました",
-    stockFile: "公式の FM-1.fwsc", stockGo: "公式 V15 をインストール",
-    stockValid: "公式 V15 を確認しました", stockBad: "公式 V15 ではありません: ",
-    stockConfirm: "FM-1 に公式 V15 をインストールします。SLOOP の曲は公式ファームウェアでは開けません。バックアップは保存しましたか？",
-    stockFinish: "FM-1 は SLOOP の書き込みモードです。先に「インストール」で SLOOP の書き込みを終えてから、公式 V15 に戻してください。",
-    back: "M-VAVE のアップデーター M-UPGRADE（Downloads → PC Software）でも戻せます。FM-1 が見つからない場合は、MIDI を使う他のアプリとブラウザのタブを閉じてください。",
-  },
   en: {
-    intro: "Connect the FM-1 by USB. (Works in Chrome or Edge.)",
+    intro: "Connect the FM-1 by USB, then press Install. Chrome or Edge only (Web MIDI).",
     warn: "Do not unplug the USB cable while writing.",
-    install: "Install", other: "日本語",
-    editor: "Editor (after installing: edit sounds and sequences from the computer)",
+    install: "Install FM1 Quest",
+    editor: "Open the editor (back up, edit sounds and sequences from the computer)",
     direct: "Connect the USB cable directly to the computer. No probe or Transporter is needed.",
     brick: "If an install fails and the FM-1 no longer starts, recovering it needs a Transporter:",
-    beta: "This is a beta and may be unstable. The author accepts no responsibility if your FM-1 is damaged or misbehaves because of this custom firmware. Use it at your own risk.",
+    beta: "FM1 Quest is an experimental custom firmware and may be unstable. It has not been tried on every unit. The authors accept no responsibility if your FM-1 is damaged or misbehaves because of it. Use it at your own risk, and save a backup first.",
     back: "To go back to the official firmware you need M-VAVE's official updater, M-UPGRADE (Downloads → PC Software → M-UPGRADE), and the official firmware (PC Firmware → FM-1 V15).",
     nomidi: "This browser cannot do it. Open the page in Chrome or Edge.", loadfail: "Could not load: ",
     start: "Starting", verify: "Verifying", loader: "Switching to update mode", write: "Writing",
@@ -156,25 +133,21 @@ const TEXT = {
     license: "GPL-3.0, no warranty. Source:",
     stockTitle: "Return to the official firmware (V15)",
     stockHelp: "Download the official FM-1 V15 from M-VAVE and select the FM-1.fwsc inside it, unmodified. The file is checked in this browser; it is not sent anywhere.",
-    stockBackup: "The official firmware cannot open SLOOP's music, projects or samples. Save a backup with the editor first (Projects → Backup); reinstall SLOOP and restore it from the editor whenever you want them back.",
+    stockBackup: "The official firmware cannot open SLOOP / FM1 Quest music, projects or samples. Save a backup with the editor first (Projects → Backup); reinstall FM1 Quest and restore it from the editor whenever you want them back.",
     stockEditor: "Open the editor to back up", stockSaved: "I saved a backup on this computer",
     stockFile: "The official FM-1.fwsc", stockGo: "Install the official V15",
     stockValid: "Official V15 verified", stockBad: "Not the official V15: ",
-    stockConfirm: "Install the official V15 on the FM-1? The official firmware cannot open SLOOP's music. Did you save a backup?",
-    stockFinish: "The FM-1 is in SLOOP's update mode. Press Install to finish the SLOOP update first, then return to the official V15.",
+    stockConfirm: "Install the official V15 on the FM-1? The official firmware cannot open FM1 Quest music. Did you save a backup?",
+    stockFinish: "The FM-1 is in the update mode of SLOOP / FM1 Quest. Press Install to finish that update first, then return to the official V15.",
     back: "M-VAVE's own updater, M-UPGRADE (Downloads → PC Software), works too. If it does not find the FM-1, close every other app and browser tab that uses MIDI.",
   },
 };
-let lang = (navigator.language || "en").toLowerCase().startsWith("ja") ? "ja" : "en";
-const t = (k) => TEXT[lang][k];
+const t = (k) => TEXT.en[k];
 let lastKey = null, lastArg = "";
 function applyLang() {
-  document.documentElement.lang = lang;
   document.querySelectorAll("[data-t]").forEach((e) => { e.textContent = t(e.dataset.t); });
-  $("lang").textContent = t("other");
   if (lastKey) $("status").textContent = t(lastKey) + lastArg;
 }
-$("lang").addEventListener("click", () => { lang = lang === "ja" ? "en" : "ja"; applyLang(); });
 applyLang();
 const sayK = (k, arg = "") => { lastKey = k; lastArg = arg; $("status").textContent = t(k) + arg; };
 const say = (txt) => { lastKey = null; $("status").textContent = txt; };
@@ -203,7 +176,7 @@ window.addEventListener("beforeunload", (e) => { if (writing) { e.preventDefault
       if (h !== meta.sha256) { sayK("badpkg"); log(`sha256 ${h}, expected ${meta.sha256}`); return; }
     }
     image = logicalImage(pkg);
-    say(`SLOOP ${meta.version}`);
+    say(`FM1 Quest build ${meta.version}`);
     lockAll(writing);
   } catch (e) { sayK("loadfail", e.message); }
 })();
@@ -219,7 +192,7 @@ const step = (k, a) => {
   if (k === "done") { $("bar").value = 100; sayK("done"); }
 };
 const failed = (e) => {
-  if (e && e.code && TEXT[lang][e.code]) sayK(e.code, e.detail || "");
+  if (e && e.code && TEXT.en[e.code]) sayK(e.code, e.detail || "");
   else sayK("error", e && e.message);
   log(String(e && e.stack || e));
 };

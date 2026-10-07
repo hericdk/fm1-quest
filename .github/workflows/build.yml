@@ -67,7 +67,7 @@ jobs:
         run: cd quest && CC=zig sh ./build.sh
       - name: Site (installer + editor + emulator)
         run: |
-          python3 web/make_site.py build/felucca.fwsc quest-${{ github.run_number }} site
+          python3 web/make_site.py build/felucca.fwsc ${{ github.run_number }} site
           mkdir -p site/emulator && cp -R quest/web/. site/emulator/
       - name: Release (main only)
         if: github.ref == 'refs/heads/main'

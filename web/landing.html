@@ -1,0 +1,45 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: GPL-3.0-only. FM1 Quest landing page. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FM1 Quest</title>
+<style>
+  @font-face { font-family: "Pixelify Sans"; src: url(assets/PixelifySans-400.ttf) format("truetype"); font-display: swap; }
+  @font-face { font-family: "Jacquarda Bastarda 9"; src: url(assets/JacquardaBastarda9.ttf) format("truetype"); font-display: swap; }
+  :root { --bg: #1e1418; --fg: #f2e2c4; --dim: #a89080; --tile: #3a2620; --gold: #c8963c; --hi: #f0c860; --line: #5a3a28; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.55 "Pixelify Sans", ui-monospace, monospace; }
+  main { max-width: 600px; margin: 0 auto; padding: 28px 16px 56px; text-align: center; }
+  img { width: min(360px, 88%); height: auto; image-rendering: pixelated; filter: drop-shadow(0 3px 0 #000) drop-shadow(0 0 2px #000); }
+  .strip { display: flex; height: 5px; margin: 14px 0 22px; } .strip i { flex: 1; }
+  .strip i:nth-child(1) { background: #5a8ad0; } .strip i:nth-child(2) { background: #7ab04e; } .strip i:nth-child(3) { background: #f0c860; } .strip i:nth-child(4) { background: #e0803a; }
+  h1 { font: 400 26px/1.15 "Jacquarda Bastarda 9", serif; color: var(--hi); margin: 0 0 10px; }
+  p { margin: 0 0 14px; } .lead { font-size: 17px; }
+  .go { display: block; margin: 10px 0; padding: 16px; background: var(--tile); border: 1px solid var(--gold); color: var(--fg); text-decoration: none;
+        box-shadow: inset 0 0 0 2px var(--bg), inset 0 0 0 3px #6a4030; text-align: left; }
+  .go b { display: block; color: var(--hi); font-size: 18px; } .go span { color: var(--dim); font-size: 14px; }
+  .go:hover { background: #4a3228; }
+  .small { color: var(--dim); font-size: 14px; text-align: left; } .small a { color: var(--fg); }
+  hr { border: 0; border-top: 1px solid var(--line); margin: 26px 0 16px; }
+</style>
+</head>
+<body>
+<main>
+  <img src="assets/logo.png" alt="FM1 Quest">
+  <div class="strip"><i></i><i></i><i></i><i></i></div>
+  <h1>A pixel-art RPG for your FM-1</h1>
+  <p class="lead">Custom firmware for the M-VAVE FM-1: the SLOOP groovebox drawn as a sidescroll adventure. Build /*VERSION*/.</p>
+  <a class="go" href="webapp/installer/"><b>Installer</b><span>Put FM1 Quest on your FM-1 over USB (Chrome or Edge)</span></a>
+  <a class="go" href="webapp/editor/"><b>Editor</b><span>Back up your FM-1, edit sounds, patterns and presets (FM-1 connected by USB)</span></a>
+  <a class="go" href="emulator/"><b>Emulator</b><span>Try the real firmware in your browser: keyboard, knobs and sound</span></a>
+  <a class="go" href="https://github.com/hericdk/fm1-quest" target="_blank" rel="noopener"><b>Source</b><span>github.com/hericdk/fm1-quest (GPL-3.0)</span></a>
+  <hr>
+  <p class="small"><b>FM1 Quest</b> is based on <a href="https://github.com/isod89/sloop-fm1" target="_blank" rel="noopener">SLOOP</a> by isod89, which is based on
+    <a href="https://github.com/hugelton/Felucca" target="_blank" rel="noopener">Felucca</a> by Leo Kuroshita (@kurogedelic), H&uuml;gelton Instruments.
+    The emulator builds on <a href="https://github.com/sabliran/sloop-web-emu" target="_blank" rel="noopener">sloop-web-emu</a> by sabliran.
+    Custom firmware is installed at your own risk. M-VAVE and FM-1 are trademarks of their owners; this project is not affiliated with them.</p>
+</main>
+</body>
+</html>

@@ -97,7 +97,9 @@ def generate():
             [tools / "gen_tables.py", GEN / "felucca_tables.h"],
             [tools / "gen_samples.py", GEN / "felucca_samples.h"],
             [tools / "gen_drumkits.py", GEN / "felucca_drumkits.h"],
-            [tools / "gen_logo.py", GEN / "sloop_logo.h"]]
+            [tools / "gen_logo.py", GEN / "sloop_logo.h"],
+            [tools / "gen_quest_font.py", GEN / "felucca_qfont.h"],          # FM1 Quest
+            [tools / "gen_quest_sprites.py", GEN / "felucca_qsprites.h"]]
     procs = [subprocess.Popen([sys.executable, *map(str, c)], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                               text=True) for c in cmds]
     failed = []

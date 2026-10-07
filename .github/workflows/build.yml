@@ -1,0 +1,40 @@
+name: build-firmware
+# Builds the installable package (build/felucca.fwsc) with JieLi's Linux toolchain, runs the host tests and, on main,
+# publishes the package as a GitHub release you can download and install from the browser installer.
+on:
+  push:
+    branches: [main, 'quest-*']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  firmware:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - run: pip install pillow numpy
+      - name: JieLi toolchain
+        run: sh tools/get_toolchain.sh
+      - name: JieLi AC79 SDK (three files are used)
+        run: git clone --depth 1 --branch AC79NN_SDK_V1.2.1_2023-12-13 https://gitee.com/Jieli-Tech/fw-AC79_AIoT_SDK.git ~/fw-AC79_AIoT_SDK
+      - name: Build
+        run: ./build.sh --release quest-${{ github.run_number }}
+      - name: Size of the app
+        run: ls -l build/felucca.bin build/felucca.fwsc build/loader/ota.bin
+      - name: Host tests
+        run: sh tests/run_tests.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fm1-quest-firmware
+          path: |
+            build/felucca-*.fwsc
+            build/felucca.bin
+      - name: Release (main only)
+        if: github.ref == 'refs/heads/main'
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: |
+          F=$(ls build/felucca-*.fwsc | head -1)
+          gh release create "quest-${{ github.run_number }}" "$F" --title "FM1 Quest build ${{ github.run_number }}" \
+            --notes "Installable package. Open the installer (web/make_site.py, see BUILDING.md), connect the FM-1 by USB, press INSTALL. Custom firmware: at your own risk."

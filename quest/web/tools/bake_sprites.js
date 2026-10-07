@@ -22,6 +22,8 @@
     });
     grab(`${c}_seat`, R => S.figure(R, c, OX, OY, { t: 0, sit: 1 }));
   });
+  cls.forEach(c => grab(`${c}_rot`, R => S.figure(R, c, OX, OY, { t: 0, rot: 1 })));            // sleeping (the menu)
+  [['idle', null], ['antic', -0.2], ['strike', 0.1], ['follow', 0.4]].forEach(([n, p]) => grab(`rival_${n}`, R => S.figure(R, 'warrior', OX, OY, { t: 0, p, cmap: S.RIVAL })));   // the duel's shadow rival
   // slimes: squash / stretch states (the hop), plain and hit-flash (red); King Slime is drawn by the scene code
   [[-0.12, 'air'], [0, 'rest'], [0.22, 'land']].forEach(([sq, n]) => [0, 1].forEach(fl => grab(`slime_${n}_${fl}`, R => S.slimeD(R, OX + 11, OY + 16, 22, 16, S.MON['1c'].slime, { sq, flash: fl, noShadow: 1 }))));
   grab('bat_0', R => S.spr(R, S.BATA, OX, OY, S.MON['1c'].bat, { s: 2 }));

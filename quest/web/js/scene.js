@@ -301,5 +301,5 @@ function drawIcon(cv){const c=cv.getContext('2d'),col=cv.dataset.col||'#fff',ty=
  for(let x=1;x<=10;x++){let y=6;if(ty==='saw')y=Math.round(9-((x-1)%5)*1.5);else if(ty==='sine')y=Math.round(6-Math.sin((x-1)/9*Math.PI*2)*3.5);else if(ty==='square')y=x<=5?3:9;else if(ty==='tri')y=Math.round(9-Math.abs(((x-1)%6)-3)*2);else y=2+Math.floor(hs(x*7)*8);pts.push([x,y]);}
  pts.forEach((p,i)=>{c.fillRect(p[0],p[1],1,1);if(i>0){const a=pts[i-1][1],b=p[1];for(let y=Math.min(a,b);y<=Math.max(a,b);y++)c.fillRect(p[0],y,1,1);}});}
 
-G.Scene={drawScene,drawKnob,drawPortrait,drawIcon,PALS,ORDER,PX,figure,slimeD,spr,BATA,BATB,SLIME,CL,MON,hop};
+G.Scene={drawScene,drawKnob,drawPortrait,drawIcon,PALS,ORDER,PX,figure,slimeD,spr,BATA,BATB,SLIME,CL,MON,hop,RIVAL};
 })(window);

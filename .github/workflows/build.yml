@@ -32,7 +32,16 @@ jobs:
           curl -fL --retry 5 -o $D/cfg_tool.bin $B/cfg_tool.bin
           curl -fL --retry 5 -o $D/cfg/eq_cfg_hw.bin $B/cfg/eq_cfg_hw.bin
       - name: Build the firmware package
-        run: ./build.sh
+        run: |
+          set +e
+          ./build.sh > build.log 2>&1
+          rc=$?
+          cat build.log | tail -n 40
+          if [ $rc -ne 0 ]; then
+            # the tail of the log as ONE annotation (readable from the checks API without a login)
+            echo "::error title=build failed::$(grep -v '^\s*$' build.log | tail -n 60 | cut -c1-220 | sed ':a;N;$!ba;s/\n/%0A/g')"
+          fi
+          exit $rc
       - name: Size of the app
         run: ls -l build/felucca.bin build/felucca.fwsc build/loader/ota.bin
       - name: Host tests

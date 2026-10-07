@@ -1,40 +1,28 @@
 # FM1 Quest
 
-An RPG sidescroll skin for the SLOOP firmware of the M-VAVE FM-1, plus a browser emulator to try it.
-This folder lives in a fork of [isod89/sloop-fm1](https://github.com/isod89/sloop-fm1); the firmware sources in the
-parent folder are used **unmodified**.
+The SLOOP firmware of the M-VAVE FM-1 with an RPG sidescroll interface: tracks are heroes, lit steps are attacks, BPM sets the
+walk, the key sets the biome, effects are the weather, a recording is a boss fight (design: `design/`). **The interface replaces
+SLOOP's screens; there is no switch back.** Every musical function stays where SLOOP has it, with the same controls.
 
-* `web/` — the emulator: the faceplate, audio worklet and LCD model are from
-  [sabliran/sloop-web-emu](https://github.com/sabliran/sloop-web-emu) (GPL-3.0), running the real firmware compiled to
-  WebAssembly. `quest.js` / `quest.css` / `js/scene.js` are the skin: the 15 screens of the TAVERN design, drawn from the
-  firmware's own state. Top-left switch: SLOOP (the firmware's LCD) / QUEST (the skin).
-* `src/sloop_wasm.c` — the web HAL (unchanged from sloop-web-emu). `src/quest_wasm.c` — includes it and exports a read-only
-  snapshot of the firmware state. `tools/patch_hooks.py` — writes patched *copies* of `ui_layers.c` and `ui_draw.c` at build
-  time (read-only capture calls); the repository's own files are never edited.
-* `design/` — the design handoff (README, HTML reference, assets).
+* `firmware/src/ui_quest*.c` — the interface in C (the 240x240 `cv_*` canvas, integer maths): Title (`splash.c`), Party, Boss, Duel,
+  Rec ready, Count-in, Dungeon, Kit, Spells, Banish, Biome, Camp, Weather, Equip, Inn. Screens SLOOP has and the design does not
+  (the roll / steps / song layers, hold, ABOUT, the other pages) keep their layout in the TAVERN palette (`gfx.c`, `ui_studio.c`).
+* `tools/gen_quest_*.py` — fonts (Pixelify Sans 8 px, Jacquarda Bastarda 9 16 px), the baked sprites (`assets/quest/sprites.json`,
+  made from the design by `quest/web/tools/bake.html`) and the title art, through the repository's own generators.
+* `quest/` — the browser emulator: `web/` is the faceplate, audio worklet and LCD model of
+  [sabliran/sloop-web-emu](https://github.com/sabliran/sloop-web-emu) running this firmware as WebAssembly (`./build.sh`).
+  `python3 quest/serve.py 5193`, open it, press POWER ON.
+* `.github/workflows/build.yml` — builds the installable package with JieLi's toolchain, runs the host tests, publishes a release and
+  the Pages site (browser installer + emulator).
 
-## Run
-    python3 quest/serve.py 5193        # then open http://localhost:5193 and press POWER ON
-
-## Rebuild the wasm
-    cd quest && CC=zig ./build.sh      # or CC=clang with wasm-ld; needs python3 + numpy + pillow
+## Install on an FM-1
+Use the installer of the Pages site (or `web/make_site.py build/felucca.fwsc dev OUT` served from localhost), in Chrome or Edge,
+connect the FM-1 by a USB data cable (no hub), press INSTALL. The package is checked (SHA-256 / CRC) before it is written; hold OCT-
+at power-on for the USB rescue; SLOOP's own release can be installed over it. **At your own risk; not yet tried on a device.**
 
 ## Animation / SPI budget
-The scene animates at ~16 fps while the transport plays and at a slow ambient rate when stopped, paced by a token
-bucket of LCD SPI bytes (12 MHz bus, `Q.cfg` in `web/quest.js`); frames that do not fit are dropped, not queued.
-The badge at the bottom-left of the page shows the estimate. The values are placeholders until measured on a device.
+The scene animates at ~16 fps while the transport plays and at a slow ambient rate when stopped, paced by a token bucket of LCD
+SPI bytes (12 MHz bus, `q_scene_budget` in `ui_quest_screens.c`); a frame that does not fit is dropped, never queued.
+The values are placeholders until measured on a device.
 
-## The C screens (FELUCCA_QUEST)
-`firmware/src/ui_quest.c` is the PARTY screen written for the device (the 240x240 `cv_*` canvas, integer maths, fonts and
-sprites through the repository's own generators: `tools/gen_quest_font.py`, `tools/gen_quest_sprites.py`). It replaces
-`studio_tracks_draw()` only when `FELUCCA_QUEST` is 1; the default is **0**, so a stock build is unchanged (the host tests
-pass in both modes: `cc -DFELUCCA_QUEST=1 ... tests/ui_pages_test.c`). The web build always turns it on: switch the emulator to
-SLOOP (top-left) to see the firmware's own pixels, which are then these C screens. Sprites come from `assets/quest/sprites.json`
-(baked from the design by `web/tools/bake_sprites.js`). Not measured on a device: the build adds ~40 KB of fonts/sprites/code data
-that has not been checked against the 560 KiB XIP limit.
-
-## Status
-All 15 screens are skinned in the emulator (HTML). In C (device code): Party only. Screens without a skin (roll / steps / song layers, hold, ABOUT, HOME,
-other pages, drum-track pages) show the firmware's own LCD. Nothing here has been run on a real FM-1.
-
-GPL-3.0-only, as the firmware. Installing custom firmware is at your own risk.
+GPL-3.0-only, as the firmware.

@@ -49,9 +49,6 @@
 #include "midi_uart.c"
 #endif
 #define FELUCCA_ARRANGER 1
-#ifndef FELUCCA_QUEST
-#define FELUCCA_QUEST 0          /* FM1 Quest: the RPG skin (ui_quest.c); 0 = the stock screens */
-#endif
 #include "arranger.c"
 #include "seq.c"
 #include "audio.c"
@@ -60,10 +57,10 @@
 #include "ui_song.c"
 #include "ui_studio.c"
 #include "icons.c"           /* parameter icons (FELUCCA_ICONS), used by ui_draw.c */
-#include "ui_quest.c"        /* FM1 Quest skin (FELUCCA_QUEST, default 0): before ui_draw.c */
 #include "ui_draw.c"
 #include "ui_layers.c"       /* hold a function button: what the keys and knobs do (TE style) */
 #include "ui_menu.c"
+#include "ui_quest.c"        /* FM1 Quest: the interface (PARTY, BOSS, DUEL, REC, DUNGEON, KIT, layers, EQUIP, WEATHER, INN) */
 #include "ui_input.c"
 #ifndef FELUCCA_FLASH
 #define FELUCCA_FLASH 1          /* flash driver + storage.c */

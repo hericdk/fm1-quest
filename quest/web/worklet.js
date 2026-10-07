@@ -19,8 +19,6 @@ class SloopProcessor extends AudioWorkletProcessor {
         this.audioPtr = this.e.emu_audio_ptr();
         this.ledPtr = this.e.emu_led_ptr();
         this.ledDimPtr = this.e.emu_led_dim_ptr();
-        this.hasQuest = !!this.e.quest_snap;               // FM1 Quest build: read-only state export
-        if (this.hasQuest) { this.qPtr = this.e.quest_ptr(); this.qTxt = this.e.quest_txt_ptr(); this.qB = this.e.quest_b_ptr(); }
         this.lastGen = -1;
         this.blocks = 0;
         this.running = true;
@@ -40,19 +38,12 @@ class SloopProcessor extends AudioWorkletProcessor {
         const gen = this.e.emu_fb_gen();
         const leds = new Uint8Array(this.e.memory.buffer, this.ledPtr, 11).slice();
         const dims = new Uint8Array(this.e.memory.buffer, this.ledDimPtr, 11).slice();
-        let snap = null, txt = null, qb = null;
-        if (this.hasQuest) {
-            this.e.quest_snap();
-            snap = new Int32Array(this.e.memory.buffer, this.qPtr, 512).slice();
-            txt = new Uint8Array(this.e.memory.buffer, this.qTxt, 4 * 2 * 20).slice();
-            qb = new Uint8Array(this.e.memory.buffer, this.qB, 4096).slice();
-        }
         if (gen !== this.lastGen) {
             this.lastGen = gen;
             const fb = new Uint16Array(this.e.memory.buffer, this.fbPtr, 240 * 240).slice();
-            this.port.postMessage({ t: 'frame', fb, leds, dims, snap, txt, qb }, [fb.buffer]);
+            this.port.postMessage({ t: 'frame', fb, leds, dims }, [fb.buffer]);
         } else {
-            this.port.postMessage({ t: 'leds', leds, dims, snap, txt, qb });
+            this.port.postMessage({ t: 'leds', leds, dims });
         }
     }
 

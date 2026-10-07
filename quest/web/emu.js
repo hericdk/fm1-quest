@@ -10,25 +10,12 @@
 const S = 1.25;                          // px per drawing unit
 const DEV = { w: 963, h: 588 };
 
-/* ---- firmware + skin ----
- * Only SLOOP is built here (Felucca's wasm is not part of this project).
- * The top-left switch toggles the LCD skin: ORIGINAL = the firmware's own
- * pixels, QUEST = the RPG skin (quest.js) drawn from the firmware's state. */
+/* ---- FM1 Quest: the interface is the firmware's own screens (firmware/src/ui_quest*.c); there is no skin switch ---- */
 const FW = 'sloop';
-let SKIN = localStorage.getItem('skin') === 'original' ? 'original' : 'quest';
-function paintSkinSwitch() {
-    document.querySelectorAll('#fw span').forEach(s => s.classList.toggle('on', s.dataset.skin === SKIN));
-    window.Quest && Quest.setActive(SKIN === 'quest');
-}
-document.getElementById('fw').addEventListener('click', () => {
-    SKIN = SKIN === 'quest' ? 'original' : 'quest';
-    localStorage.setItem('skin', SKIN);
-    paintSkinSwitch();
-});
 document.getElementById('title').innerHTML = '<b>FM1 QUEST</b> &middot; SLOOP 2.3 &middot; M-VAVE FM-1 &middot; browser emulator';
 document.title = 'FM1 Quest — FM-1 emulator';
 document.querySelector('#power small').textContent =
-    'runs the real SLOOP firmware, compiled to WebAssembly · sound on';
+    'runs the real firmware, compiled to WebAssembly · sound on';
 
 /* ---- panel mapping (firmware/src/panel.c PANEL_DEFAULT) ----
  * label order: FX SCL ENV LFO EDIT GLO HOME SAVE ARP SEQ PLAY REC OCT- OCT+ */
@@ -322,14 +309,14 @@ async function powerOn() {
     });
     node.port.onmessage = ev => {
         const m = ev.data;
-        if (m.t === 'frame') { drawFB(m.fb); applyLeds(m.leds, m.dims); window.Quest && Quest.onMsg(m); }
-        else if (m.t === 'leds') { applyLeds(m.leds, m.dims); window.Quest && Quest.onMsg(m); }
+        if (m.t === 'frame') { drawFB(m.fb); applyLeds(m.leds, m.dims); }
+        else if (m.t === 'leds') { applyLeds(m.leds, m.dims); }
         else if (m.t === 'flash') saveFlash(m.data);
     };
     node.connect(ctx.destination);
     await ctx.resume();
     sendMaster();
-    setTimeout(() => { node.port.postMessage({ t: 'start' }); window.Quest && Quest.started(); }, 900);   // splash dwell, as fm1_main
+    setTimeout(() => node.port.postMessage({ t: 'start' }), 900);   // splash dwell, as fm1_main
     initMidi();
 }
 document.getElementById('power').addEventListener('click', powerOn, { once: true });
@@ -462,8 +449,6 @@ buildButtons();
 buildKeyboard();
 const screenCanvas = buildScreen();
 c2d = screenCanvas.getContext('2d');
-window.Quest && Quest.mount(screenCanvas, noteDown, noteUp);
 
 img = c2d.createImageData(240, 240);
-paintSkinSwitch();
 fitDevice();

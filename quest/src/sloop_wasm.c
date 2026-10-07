@@ -225,13 +225,10 @@ static volatile uint32_t emu_flash_gen;
 #include "ui_song.c"
 #include "ui_studio.c"
 #include "icons.c"
-#ifndef FELUCCA_QUEST
-#define FELUCCA_QUEST 1          /* the web build always has the skin's C screens */
-#endif
-#include "ui_quest.c"
 #include "ui_draw.c"
 #include "ui_layers.c"
 #include "ui_menu.c"
+#include "ui_quest.c"
 #include "ui_input.c"
 /* ---- flash: a RAM image of the FM-1's persisted areas ----
  * storage.c's A/B sector scheme runs unchanged on this array; JS loads a
@@ -318,8 +315,10 @@ WASM_EXPORT("emu_init") void emu_init(void)
     emu_felucca_init();
 }
 
+static uint8_t emu_running;                      /* the splash stays up until emu_start (as fm1_main shows it during init) */
 WASM_EXPORT("emu_start") void emu_start(void)   /* after the splash has shown */
 {
+    emu_running = 1;
     lcd_fill(0, 0, 240, 240, C_BLACK);
     ui.force = 1;
 }
@@ -336,7 +335,8 @@ WASM_EXPORT("emu_frame") void emu_frame(void)   /* the main loop's UI pass */
     }
     ui_input();
     ui_leds();
-    ui_draw();
+    if (emu_running)
+        ui_draw();
     autosave_tick();
     sections_flush();
 }

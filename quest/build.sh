@@ -1,6 +1,6 @@
 #!/bin/sh
 # Build web/sloop.wasm: the SLOOP firmware of this repository (unmodified) + the web HAL (src/sloop_wasm.c, from
-# sabliran/sloop-web-emu) + src/quest_wasm.c (read-only state export for the skin).
+# sabliran/sloop-web-emu).
 #   needs: clang + wasm-ld (or zig: `pip install ziglang`, then CC=zig), python3 + numpy + pillow
 #   ./build.sh                 # SLOOP defaults to the repository root (..)
 set -e
@@ -18,9 +18,9 @@ if [ ! -f "$SLOOP/build/gen/felucca_tables.h" ]; then      # the firmware's gene
 fi
 python3 "$SLOOP/tools/gen_quest_font.py" "$SLOOP/build/gen/felucca_qfont.h"
 python3 "$SLOOP/tools/gen_quest_sprites.py" "$SLOOP/build/gen/felucca_qsprites.h"
-python3 tools/patch_hooks.py "$SLOOP/firmware/src" build/quest_src
+python3 "$SLOOP/tools/gen_quest_title.py" "$SLOOP/build/gen/felucca_qtitle.h"
 $CC --target=$TARGET -O2 -fno-builtin -ffreestanding -nostdlib -w \
-  -I build/quest_src -I "$SLOOP/build/gen" -I "$SLOOP/firmware/src" -I src \
+  -I "$SLOOP/build/gen" -I "$SLOOP/firmware/src" -I src \
   -Wl,--no-entry -Wl,--export-memory -Wl,-z,stack-size=1048576 -Wl,--global-base=1048576 \
-  -o web/sloop.wasm src/quest_wasm.c
+  -o web/sloop.wasm src/sloop_wasm.c
 ls -la web/sloop.wasm

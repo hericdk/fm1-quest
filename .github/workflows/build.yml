@@ -1,20 +1,26 @@
 name: build-firmware
-# Builds the installable package (build/felucca.fwsc) with JieLi's Linux toolchain, runs the host tests and, on main,
-# publishes the package as a GitHub release you can download and install from the browser installer.
+# Builds the installable package (build/felucca.fwsc) with JieLi's Linux toolchain, runs the host tests and, on main, publishes
+#   - the package as a GitHub release (download it, or use the installer below), and
+#   - a Pages site: the browser installer + editor (web/make_site.py) and the browser emulator (quest/web).
+# For Pages: Settings > Pages > Source: "GitHub Actions" (no branch needed).
 on:
   push:
     branches: [main, 'quest-*']
   workflow_dispatch:
 permissions:
   contents: write
+  pages: write
+  id-token: write
 jobs:
   firmware:
     runs-on: ubuntu-22.04
+    environment:
+      name: github-pages
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
-      - run: pip install pillow numpy
+      - run: pip install pillow numpy ziglang
       - name: JieLi toolchain
         run: sh tools/get_toolchain.sh
       - name: JieLi AC79 SDK (only three files are used; build.py checks their SHA-256)
@@ -25,8 +31,8 @@ jobs:
           curl -fL --retry 5 -o $D/uboot.boot $B/uboot.boot
           curl -fL --retry 5 -o $D/cfg_tool.bin $B/cfg_tool.bin
           curl -fL --retry 5 -o $D/cfg/eq_cfg_hw.bin $B/cfg/eq_cfg_hw.bin
-      - name: Build
-        run: ./build.sh --release quest-${{ github.run_number }}
+      - name: Build the firmware package
+        run: ./build.sh
       - name: Size of the app
         run: ls -l build/felucca.bin build/felucca.fwsc build/loader/ota.bin
       - name: Host tests
@@ -34,13 +40,27 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: fm1-quest-firmware
-          path: |
-            build/felucca-*.fwsc
-            build/felucca.bin
+          path: build/felucca.fwsc
+      - name: Browser emulator (wasm)
+        run: cd quest && CC=zig ./build.sh
+      - name: Site (installer + editor + emulator)
+        run: |
+          python3 web/make_site.py build/felucca.fwsc quest-${{ github.run_number }} site
+          mkdir -p site/emulator && cp -R quest/web/. site/emulator/
       - name: Release (main only)
         if: github.ref == 'refs/heads/main'
         env: { GH_TOKEN: '${{ github.token }}' }
         run: |
-          F=$(ls build/felucca-*.fwsc | head -1)
-          gh release create "quest-${{ github.run_number }}" "$F" --title "FM1 Quest build ${{ github.run_number }}" \
-            --notes "Installable package. Open the installer (web/make_site.py, see BUILDING.md), connect the FM-1 by USB, press INSTALL. Custom firmware: at your own risk."
+          cp build/felucca.fwsc fm1-quest-${{ github.run_number }}.fwsc
+          gh release create "quest-${{ github.run_number }}" "fm1-quest-${{ github.run_number }}.fwsc" --title "FM1 Quest build ${{ github.run_number }}" \
+            --notes "Installable package. Open the installer page, connect the FM-1 by USB (a data cable, no hub), press INSTALL. Custom firmware: at your own risk; OCT- held at power-on = USB rescue."
+      - uses: actions/configure-pages@v5
+        if: github.ref == 'refs/heads/main'
+        continue-on-error: true
+      - uses: actions/upload-pages-artifact@v3
+        if: github.ref == 'refs/heads/main'
+        continue-on-error: true
+        with: { path: site }
+      - uses: actions/deploy-pages@v4
+        if: github.ref == 'refs/heads/main'
+        continue-on-error: true

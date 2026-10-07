@@ -1,0 +1,6 @@
+<!doctype html><meta charset="utf-8"><title>Bake the FM1 Quest sprites</title>
+<!-- dev tool: python3 quest/serve.py with FM1_DEV=1, open /tools/bake.html; it renders the design's procedural sprites
+     (tools/scene.js, ported from the design handoff) to palette-indexed bitmaps and saves quest/build/sprites.json;
+     copy that to assets/quest/sprites.json and run tools/gen_quest_sprites.py. -->
+<script src="scene.js"></script><script src="bake_sprites.js"></script>
+<script>fetch('bake_sprites.js').then(r=>r.text()).then(t=>{const r=eval(t);return fetch('/__dev/save/sprites.json',{method:'POST',body:r})}).then(r=>r.text()).then(t=>document.body.textContent='saved: '+t)</script>

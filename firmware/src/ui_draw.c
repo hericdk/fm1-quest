@@ -3,6 +3,8 @@
 /* Felucca UI drawing: status bar (top), columns + gauges, graphs, focus readout,
  * footer (steps + engine / preset / page). */
 static void draw_menu(void);
+/* FM1 Quest (ui_quest.c, included after ui_menu.c) */
+static void quest_tracks_draw(void), quest_rec_draw(void), quest_drum_draw(void), quest_menu_draw(void), quest_equip_draw(void), quest_weather_draw(void), quest_leave(void);
 static uint32_t str_hash(uint32_t h, const char *s);
 
 /* --------------------------------------------------------- drawing --- */
@@ -943,8 +945,10 @@ static void ui_draw(void)
             ui_message("ERASED");
     }
     if (!ui.menu && (ui.layer != LY_PLAY || ui.hold_kind)) {   /* a layer held / a hold to confirm */
-        if (ui.hold_kind)
+        if (ui.hold_kind) {
+            quest_leave();
             hold_screen_draw();
+        }
         else
             layer_screen_draw();
         ui_timers();
@@ -957,7 +961,7 @@ static void ui_draw(void)
         ui.force = 1;
     }
     if ((rec_wait || ft_on) && !ui.menu && !on_song_page()) {   /* armed / free take */
-        rec_screen_draw();
+        quest_rec_draw();                               /* FM1 Quest: REC READY / COUNT-IN / the boss */
         ui_timers();
         ui.force = 0;
         return;
@@ -969,6 +973,7 @@ static void ui_draw(void)
     }
 #if FELUCCA_ARRANGER
     if (!ui.menu && on_song_page()) {
+        quest_leave();
         song_screen_draw();
         ui_timers();
         ui.force = 0;
@@ -976,27 +981,38 @@ static void ui_draw(void)
     }
 #endif
     if (ui.menu) {
-        draw_menu();
+        if (ui.menu == 1) quest_menu_draw();            /* FM1 Quest: the inn */
+        else { quest_leave(); draw_menu(); }
+
         ui_timers();
         ui.force = 0;
         return;
     }
     if (!ui.home && cur_page()->scope == SC_TRK) {
-#if FELUCCA_QUEST
-        quest_tracks_draw();                            /* FM1 Quest: the PARTY screen (ui_quest.c) */
-#else
-        studio_tracks_draw();
-#endif
+        quest_tracks_draw();                            /* FM1 Quest: PARTY / BOSS / DUEL */
         ui_timers();
         ui.force = 0;
         return;
     }
     if (on_drum_page()) {
-        drum_screen_draw();
+        quest_drum_draw();                              /* FM1 Quest: DUNGEON / KIT */
         ui_timers();
         ui.force = 0;
         return;
     }
+    if (!ui.home && !is_drum(TSEL) && cur_page()->scope == SC_ENGINE) {          /* FM1 Quest: EQUIP (EDIT 1 / 2) */
+        quest_equip_draw();
+        ui_timers();
+        ui.force = 0;
+        return;
+    }
+    if (!ui.home && !is_drum(TSEL) && cur_page()->fam == FAM_FX && cur_page()->id[0] == P_DIST) {   /* FM1 Quest: WEATHER (the FX page) */
+        quest_weather_draw();
+        ui_timers();
+        ui.force = 0;
+        return;
+    }
+    quest_leave();                                      /* the pages without a Quest screen keep the stock layout */
     cursor_fix();
     if (ui.force)
         draw_frame();

@@ -11,14 +11,14 @@ static void trk_short_name(uint32_t c, char *b);
 static int on_drum_page(void) { return !ui.home && cur_page()->scope == SC_DRUM; }
 
 /* ---------------------------------------------------------------- style --- */
-#define TE_G1 RGB(26, 26, 30)            /* tiles */
-#define TE_G2 RGB(54, 54, 60)            /* empty steps, dial tracks */
-#define TE_G3 RGB(118, 118, 126)         /* labels */
-#define TE_G4 RGB(196, 196, 204)         /* secondary text */
-#define TE_RED RGB(255, 44, 52)          /* recording, erasing */
-static const uint16_t TE_COL[4] = {RGB(40, 124, 255), RGB(30, 204, 112), RGB(255, 198, 24), RGB(255, 98, 26)};
-static const uint16_t TE_MID[4] = {RGB(26, 82, 170), RGB(20, 136, 76), RGB(170, 132, 16), RGB(170, 66, 18)};
-static const uint16_t TE_DIM[4] = {RGB(14, 40, 86), RGB(10, 66, 38), RGB(86, 66, 8), RGB(86, 32, 8)};
+#define TE_G1 RGB(0x24, 0x18, 0x1c)      /* tiles (FM1 Quest TAVERN: warm greys, wood, gold) */
+#define TE_G2 RGB(0x2e, 0x22, 0x26)      /* empty steps, dial tracks */
+#define TE_G3 RGB(0xa8, 0x90, 0x80)      /* labels */
+#define TE_G4 RGB(0xc8, 0xb0, 0x90)      /* secondary text */
+#define TE_RED RGB(0xe0, 0x50, 0x3c)     /* recording, erasing */
+static const uint16_t TE_COL[4] = {RGB(0x5a, 0x8a, 0xd0), RGB(0x7a, 0xb0, 0x4e), RGB(0xf0, 0xc8, 0x60), RGB(0xe0, 0x8a, 0x3a)};
+static const uint16_t TE_MID[4] = {RGB(0x44, 0x68, 0x9c), RGB(0x5a, 0x8a, 0x3c), RGB(0xc0, 0xa0, 0x48), RGB(0xb4, 0x6c, 0x2c)};
+static const uint16_t TE_DIM[4] = {RGB(0x2a, 0x3a, 0x63), RGB(0x3a, 0x5a, 0x28), RGB(0x7a, 0x64, 0x20), RGB(0x7a, 0x4a, 0x20)};
 #define TE_DRUM TE_COL[3]
 
 static void te_disc(int32_t cx, int32_t cy, int32_t r, uint16_t c)     /* filled circle */

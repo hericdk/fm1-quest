@@ -27,10 +27,9 @@ static void draw_menu(void)
         cv_begin(240, pass ? 95u : 124u, C_BLACK);
         cv_oy = pass ? -124 : 0;
         if (ui.menu == 2) {
-            cv_text(4, 4, &FONT_L, "SLOOP", C_WHITE);
-            cv_rect(96, 10, 8, 4, TE_COL[0]), cv_rect(96, 16, 12, 4, TE_COL[1]);   /* the sail */
-            cv_rect(96, 22, 16, 4, TE_COL[2]), cv_rect(96, 28, 20, 4, TE_COL[3]);
-            cv_text(4, 36, &FONT_S, "BASED ON FELUCCA", C_AMB);
+            cv_text(4, 4, &FONT_L, "FM1 QUEST", C_WHITE);
+            
+            cv_text(4, 36, &FONT_S, "BASED ON SLOOP + FELUCCA", C_AMB);
             cv_text(4, 54, &FONT_S, FELUCCA_VERSION, C_HI);
             cv_text(236 - text_w(&FONT_S, __DATE__), 54, &FONT_S, __DATE__, C_GRAY);   /* build date */
             cv_text(cv_text(4, 72, &FONT_S, "LEO KUROSHITA", C_HI) + 8, 72, &FONT_S, "@KUROGEDELIC", C_AMB);
@@ -107,10 +106,7 @@ static void menu_input(uint32_t pressed)
     if ((s = panel_enc(EN_PRESET)) != 0 && ui.menu == 1)
         ui.menu_sel = (uint8_t)((ui.menu_sel + (s > 0 ? 1u : MI_COUNT - 1u)) % MI_COUNT);
     s = panel_enc(EN_K1);
-    if (s != 0 && ui.menu == 1 && ui.menu_sel == MI_COLOR) {
-        settings.palette = (settings.palette + (s > 0 ? 1u : NPALETTES - 1u)) % NPALETTES;
-        palette_set(settings.palette);              /* (the menu signature redraws) */
-    }
+    /* FM1 Quest: one palette (TAVERN); the COLOR row only shows it */
     if ((s != 0 || ok) && ui.menu == 1 && (ui.menu_sel == MI_LOWCUT || ui.menu_sel == MI_ZOOM)) {
         /* KNOB 1: right = ON, left = OFF; OCT+ toggles */
         uint32_t *v = ui.menu_sel == MI_LOWCUT ? &settings.lowcut : &settings.zoom;
@@ -142,9 +138,7 @@ static void menu_input(uint32_t pressed)
     }
     if (ok && ui.menu == 1) {
         switch (ui.menu_sel) {
-        case MI_COLOR:                                 /* OCT+ steps through the palettes too */
-            settings.palette = (settings.palette + 1u) % NPALETTES;
-            palette_set(settings.palette);
+        case MI_COLOR:                                 /* FM1 Quest: a single palette */
             break;
         case MI_PANEL:
             panel_setup();

@@ -251,7 +251,7 @@ static void q_slime(int32_t cx, int32_t gy, int32_t w, int32_t h, uint32_t M, ui
                 if (px * px * 100 / (rx * rx) + py * py * 100 / (ry * ry) <= 100)
                     SP(hx + px, hy + py, flash ? 14u : 7u);
         for (y = 0; y < eh; y++) {
-            SP(cx - ex - 1, ey + y, 0), SP(cx - ex, ey + y, 0), SP(cx + ex - 1, ey + y, 0), SP(cx + ex, ey + y, 0);
+            SP(cx - ex - 1, ey + y, 0); SP(cx - ex, ey + y, 0); SP(cx + ex - 1, ey + y, 0); SP(cx + ex, ey + y, 0);
         }
     }
     if (crown) {
@@ -668,7 +668,6 @@ static void q_scene_world(uint32_t key)
             for (k = 0; k < 6; k++) q_rp(0, (int32_t)(qhash((uint32_t)(k + (qs.idle_q8 >> 4))) % (uint32_t)H), QW, 1, 13);
     }
     if (c->weather) q_weather_over(&fx, H, beat_q8);
-    cv_blit(0, 19);
 }
 
 /* ---- single-purpose scenes ---- */
@@ -686,7 +685,6 @@ static void q_scene_kit(void)           /* the chest and its floating items (REA
     }
     for (k = 0; k < 4; k++)
         if ((int32_t)(qhash((uint32_t)(k + (qs.idle_q8 >> 6))) & 1u)) q_rp(cx + (int32_t)(qhash((uint32_t)k * 7u) % 20u), cy - 26 - (int32_t)(qhash((uint32_t)k * 3u) % 8u), 1, 1, 7);
-    cv_blit(0, 19);
 }
 static void q_scene_camp(void)          /* the night camp: muted heroes rest at the fire, the others fight a bat (README: CAMP) */
 {
@@ -725,7 +723,6 @@ static void q_scene_camp(void)          /* the night camp: muted heroes rest at 
         n++;
     }
     q_weather_over(&fx, 84, beat_q8);
-    cv_blit(0, 19);
 }
 static void q_scene_menu(void)          /* the inn: the party sleeps around the fire (README: MENU) */
 {
@@ -735,7 +732,6 @@ static void q_scene_menu(void)          /* the inn: the party sleeps around the 
     q_world(QB_NIGHT, 0, 60, 0, 0);
     q_fire(120, G);
     for (t = 0; t < 4; t++) { q_spr(Q_ROT[t], X[t], G - 16, 1, 0, -1), q_zz(X[t] + 6, G - 18, t); }
-    cv_blit(0, 19);
 }
 static void q_scene_rec(int count)      /* rec ready / count-in: a King Slime blocks the way (README) */
 {
@@ -754,7 +750,7 @@ static void q_scene_rec(int count)      /* rec ready / count-in: a King Slime bl
     if (count && (beat_q8 & 255) < 31) {                                    /* a white frame flash on every click */
         q_rp(0, 0, QW, 2, 7), q_rp(0, 82, QW, 2, 7), q_rp(0, 0, 2, 84, 7), q_rp(238, 0, 2, 84, 7);
     }
-    cv_blit(0, 19);
 }
+static void q_scene_flush(void) { cv_blit(0, 19); }          /* the scenes draw into the canvas; the screen adds its overlay, then flushes */
 #include "ui_quest_scenes.c"
 #include "ui_quest_screens.c"

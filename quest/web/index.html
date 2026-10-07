@@ -199,14 +199,12 @@ body.compact.rotated #fw {
 #help b { color: var(--txt); font-weight: normal; }
 #help a { color: var(--accent); }
 </style>
-<link rel="stylesheet" href="quest.css">
 </head>
 <body>
 <h1 id="title"><b>SLOOP</b> 2.3 &middot; M-VAVE FM-1 &middot; browser emulator</h1>
 
 <button id="fs" aria-label="Toggle fullscreen" title="Fullscreen">&#x26F6;</button>
 
-<div id="fw" title="Switch the LCD skin: original SLOOP / FM1 Quest"><span data-skin="original">SLOOP</span><span data-skin="quest">QUEST</span></div>
 
 <div id="fstip"><div class="card">
     <h2>FULLSCREEN</h2>
@@ -214,7 +212,6 @@ body.compact.rotated #fw {
     <span class="ok">GOT IT</span>
 </div></div>
 
-<div id="perf" style="position:fixed;left:10px;bottom:6px;font-size:10px;color:#70757d;z-index:5"></div>
 <div id="device">
     <div id="power"><div class="ring">&#x23FB;</div><span>POWER ON</span><small>runs the real SLOOP firmware, compiled to WebAssembly &middot; sound on</small></div>
 </div>
@@ -224,11 +221,9 @@ body.compact.rotated #fw {
     <b>1&ndash;0</b> FX SEL ENV LFO EDIT GLO HOME SAVE ARP SEQ &middot; <b>Space</b> PLAY &middot; <b>R</b> REC &middot;
     <b>&uarr;&darr;</b> SELECT &middot; <b>&larr;&rarr;</b> ALGORITHM &middot; <b>[ \</b> PRESETS &middot;
     knobs: drag or scroll (MASTER too) &middot; hold a function button to use its layer &middot; MIDI in supported<br>
-    skin switch top-left: <b>SLOOP</b> = the firmware's own LCD, <b>QUEST</b> = the RPG skin (<a href="https://github.com/isod89/sloop-fm1" target="_blank" rel="noopener">SLOOP</a> by isod89 and <a href="https://github.com/sabliran/sloop-web-emu" target="_blank" rel="noopener">web emu</a> by sabliran; firmware GPL-3.0, by Leo Kuroshita / Hügelton Instruments) &middot; emulator runs the unmodified firmware sources in an AudioWorklet &middot; your work saves locally in this browser, per firmware (autosave, projects, user presets)
+firmware: <a href="https://github.com/isod89/sloop-fm1" target="_blank" rel="noopener">SLOOP</a> by isod89 (GPL-3.0, by Leo Kuroshita / Hügelton Instruments), browser emulator by <a href="https://github.com/sabliran/sloop-web-emu" target="_blank" rel="noopener">sabliran</a> &middot; emulator runs the unmodified firmware sources in an AudioWorklet &middot; your work saves locally in this browser, per firmware (autosave, projects, user presets)
 </div>
 
-<script src="js/scene.js"></script>
-<script src="quest.js"></script>
 <script src="emu.js"></script>
 </body>
 </html>

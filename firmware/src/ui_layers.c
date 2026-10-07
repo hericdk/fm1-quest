@@ -408,6 +408,7 @@ typedef struct {
     uint8_t marks;               /* small marks under the label (a ratchet), 0 = none */
 } tile_t;
 
+static void quest_layer_draw(uint32_t layer, const char *sub, const tile_t *tl, const char *const lab[4], const char *const val[4], const int32_t ratio[4]);
 static void tiles_draw(const tile_t *tl, uint32_t *cache)
 {
     uint32_t r, c, sig = 7u;
@@ -721,14 +722,8 @@ static void layer_screen_draw(void)
     default:
         break;
     }
-    layer_title(LAYER_NAME[layer % LY_COUNT], sub, col, &head);
-    tiles_draw(tl, &tiles);
-    {   /* (a message shows in the title: the dials stay) */
-        uint8_t m = ui.msg_t;
-        ui.msg_t = 0;
-        te_dials(184, lab, val, ratio, layer * 7919u, &foot);
-        ui.msg_t = m;
-    }
+    (void)head, (void)tiles, (void)foot, (void)col;
+    quest_layer_draw(layer, sub, tl, lab, val, ratio);          /* FM1 Quest: SPELLS / BANISH / BIOME / CAMP and the plain pad screen */
 }
 
 /* HOLD to confirm: a ring fills while REC (clear the track) or SAVE (save the project) is held */

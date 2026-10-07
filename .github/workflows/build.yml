@@ -47,7 +47,15 @@ jobs:
         run: ls -l build/felucca.bin build/felucca.fwsc build/loader/ota.bin
       - name: Host tests
         env: { SOAK_MIN: '1' }
-        run: sh tests/run_tests.sh
+        run: |
+          set +e
+          sh tests/run_tests.sh > tests.log 2>&1
+          rc=$?
+          tail -n 25 tests.log
+          if [ $rc -ne 0 ]; then
+            echo "::error title=host tests failed::$(grep -v '^\s*$' tests.log | grep -v ' ok$' | tail -n 40 | cut -c1-240 | sed ':a;N;$!ba;s/\n/%0A/g')"
+          fi
+          exit $rc
       - uses: actions/upload-artifact@v4
         with:
           name: fm1-quest-firmware

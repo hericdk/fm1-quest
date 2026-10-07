@@ -23,14 +23,12 @@ jobs:
       - run: pip install pillow numpy ziglang
       - name: JieLi toolchain
         run: sh tools/get_toolchain.sh
-      - name: JieLi AC79 SDK (only three files are used; build.py checks their SHA-256)
+      - name: JieLi AC79 SDK files (vendored in assets/jieli; build.py checks their SHA-256)
         run: |
-          B=https://gitee.com/Jieli-Tech/fw-AC79_AIoT_SDK/raw/AC79NN_SDK_V1.2.1_2023-12-13/cpu/wl82/tools
           D=$HOME/fw-AC79_AIoT_SDK/cpu/wl82/tools
           mkdir -p $D/cfg
-          curl -fL --retry 5 -o $D/uboot.boot $B/uboot.boot
-          curl -fL --retry 5 -o $D/cfg_tool.bin $B/cfg_tool.bin
-          curl -fL --retry 5 -o $D/cfg/eq_cfg_hw.bin $B/cfg/eq_cfg_hw.bin
+          cp assets/jieli/uboot.boot assets/jieli/cfg_tool.bin $D/
+          cp assets/jieli/eq_cfg_hw.bin $D/cfg/
       - name: Build the firmware package
         run: |
           set +e

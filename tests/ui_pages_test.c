@@ -72,6 +72,10 @@ static void settings_save(void) {}
 #include "../firmware/src/ui_song.c"
 #include "../firmware/src/ui_studio.c"
 #include "../firmware/src/icons.c"
+#ifndef FELUCCA_QUEST
+#define FELUCCA_QUEST 0
+#endif
+#include "../firmware/src/ui_quest.c"       /* FM1 Quest (cc -DFELUCCA_QUEST=1): the PARTY screen */
 #include "../firmware/src/ui_draw.c"
 #include "../firmware/src/ui_layers.c"
 #include "../firmware/src/ui_menu.c"

@@ -99,3 +99,5 @@ canvas{image-rendering:pixelated}
 .kno{height:13px;min-width:13px;padding:0 3px;display:flex;align-items:center;justify-content:center;flex:none}
 .gl8{width:20px;flex:none;line-height:7px;overflow:hidden;white-space:nowrap;font-size:6px}
 .grow{align-items:center}
+
+#qlcd:not(.on){display:none !important}

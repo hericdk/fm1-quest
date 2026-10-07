@@ -1,0 +1,4 @@
+FM1 Quest fonts (tools/gen_quest_font.py):
+  PixelifySans-400.ttf        Pixelify Sans, SIL Open Font License 1.1 (Google Fonts)
+  JacquardaBastarda9.ttf      Jacquarda Bastarda 9, SIL Open Font License 1.1 (Google Fonts)
+Baked into bitmaps in build/gen/felucca_qfont.h; the OFL permits embedding and requires this notice.

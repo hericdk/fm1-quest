@@ -225,6 +225,10 @@ static volatile uint32_t emu_flash_gen;
 #include "ui_song.c"
 #include "ui_studio.c"
 #include "icons.c"
+#ifndef FELUCCA_QUEST
+#define FELUCCA_QUEST 1          /* the web build always has the skin's C screens */
+#endif
+#include "ui_quest.c"
 #include "ui_draw.c"
 #include "ui_layers.c"
 #include "ui_menu.c"

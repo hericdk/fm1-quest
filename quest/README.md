@@ -24,8 +24,17 @@ The scene animates at ~16 fps while the transport plays and at a slow ambient ra
 bucket of LCD SPI bytes (12 MHz bus, `Q.cfg` in `web/quest.js`); frames that do not fit are dropped, not queued.
 The badge at the bottom-left of the page shows the estimate. The values are placeholders until measured on a device.
 
+## The C screens (FELUCCA_QUEST)
+`firmware/src/ui_quest.c` is the PARTY screen written for the device (the 240x240 `cv_*` canvas, integer maths, fonts and
+sprites through the repository's own generators: `tools/gen_quest_font.py`, `tools/gen_quest_sprites.py`). It replaces
+`studio_tracks_draw()` only when `FELUCCA_QUEST` is 1; the default is **0**, so a stock build is unchanged (the host tests
+pass in both modes: `cc -DFELUCCA_QUEST=1 ... tests/ui_pages_test.c`). The web build always turns it on: switch the emulator to
+SLOOP (top-left) to see the firmware's own pixels, which are then these C screens. Sprites come from `assets/quest/sprites.json`
+(baked from the design by `web/tools/bake_sprites.js`). Not measured on a device: the build adds ~40 KB of fonts/sprites/code data
+that has not been checked against the 560 KiB XIP limit.
+
 ## Status
-All 15 screens are skinned in the emulator. Screens without a skin (roll / steps / song layers, hold, ABOUT, HOME,
+All 15 screens are skinned in the emulator (HTML). In C (device code): Party only. Screens without a skin (roll / steps / song layers, hold, ABOUT, HOME,
 other pages, drum-track pages) show the firmware's own LCD. Nothing here has been run on a real FM-1.
 
 GPL-3.0-only, as the firmware. Installing custom firmware is at your own risk.

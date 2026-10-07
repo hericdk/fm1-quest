@@ -982,7 +982,11 @@ static void ui_draw(void)
         return;
     }
     if (!ui.home && cur_page()->scope == SC_TRK) {
+#if FELUCCA_QUEST
+        quest_tracks_draw();                            /* FM1 Quest: the PARTY screen (ui_quest.c) */
+#else
         studio_tracks_draw();
+#endif
         ui_timers();
         ui.force = 0;
         return;

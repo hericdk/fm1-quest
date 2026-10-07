@@ -41,7 +41,7 @@ static void sloop_splash(void)
         for (y = y0; y < y0 + 120u; y++) {
             uint32_t f = y < 91u ? 115u + (256u - 115u) * y / 91u : y > 149u ? 256u - 192u * (y - 149u) / 91u : 256u;
             for (x = 0; x < 240u; x++) {
-                uint32_t i = y * 240u + x, v = (QTITLE_BG[i / 2u] >> ((i & 1u) ? 0 : 4)) & 15u;
+                uint32_t i = (y / 2u) * QTITLE_BGW + x / 2u, v = (QTITLE_BG[i / 2u] >> ((i & 1u) ? 0 : 4)) & 15u;
                 cv_pset((int32_t)x, (int32_t)y, f == 256u ? QPAL[v] : q_dim565(QPAL[v], f));
             }
         }

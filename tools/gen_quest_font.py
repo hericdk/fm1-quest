@@ -29,6 +29,9 @@ def render_aa(ttf, px, scale, pixel, first, last):
         glyphs.append((adv * scale, bw * scale, G.upscale(px_, bw, h, scale)))
     return h * scale, glyphs
 
+G.PAD = 1                      # one pixel of side bearing is enough at 8 / 16 px (the stock fonts use 2)
 G.render = render_aa
-G.SIZES[:] = [("Q", "PixelifySans-400.ttf", 8, 1, False, 32, 255), ("QT", "JacquardaBastarda9.ttf", 16, 1, True, 32, 126)]
+G.SIZES[:] = [("Q", "PixelifySans-400.ttf", 8, 1, False, 32, 126), ("QT", "JacquardaBastarda9.ttf", 16, 1, True, 32, 126)]
 G.main(sys.argv[1])
+out = Path(sys.argv[1])
+out.write_text(out.read_text().replace("#define FONT_PAD 1  /* x scale for L, see below */\n", ""))      # felucca_font.h defines it

@@ -13,6 +13,7 @@ typedef struct {               /* proportional, see tools/gen_font.py */
     const uint8_t *data;
 } felucca_font_t;
 #include "felucca_font.h"
+#include "felucca_qfont.h"      /* FM1 Quest: FONT_Q (Pixelify Sans 8 px), FONT_QT (Jacquarda Bastarda 9, 16 px) */
 
 #define CV_MAX (240u * 124u)      /* the graph strip is 240 x 124 */
 static uint16_t cv_px[CV_MAX] __attribute__((section(".pool")));

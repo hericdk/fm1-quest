@@ -698,7 +698,7 @@ static void draw_graph(void)
         top = 1;
         cv_rect(0, 0, 150, 50, C_BLACK);
         cv_text(4, 0, &FONT_S, ui.focus_l, C_GRAY);
-        x = cv_text(4, 16, &FONT_L, ui.focus_v, C_WHITE);
+        x = cv_text(4, 14, &FONT_QT, ui.focus_v, C_WHITE);
         cv_text(x + 4, 30, &FONT_S, ui.focus_u, C_DIM);
     }
     /* graphs keep out of the top G_OY rows: skip them unless something is (or was) there */

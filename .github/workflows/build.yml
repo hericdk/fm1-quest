@@ -36,6 +36,9 @@ jobs:
           rc=$?
           cat build.log | tail -n 40
           if [ $rc -ne 0 ]; then
+            # where the bytes are: the biggest symbols of the object
+            ls build/felucca.o >/dev/null 2>&1 && $HOME/.jieli/toolchain/common/bin/objdump -t build/felucca.o 2>/dev/null | awk '{print $(NF-1), $NF}' | sort -r | head -45 > top.txt
+            echo "::warning title=biggest symbols::$(cat top.txt 2>/dev/null | sed ':a;N;$!ba;s/\n/%0A/g')"
             # the tail of the log as ONE annotation (readable from the checks API without a login)
             echo "::error title=build failed::$(grep -v '^\s*$' build.log | tail -n 60 | cut -c1-220 | sed ':a;N;$!ba;s/\n/%0A/g')"
           fi

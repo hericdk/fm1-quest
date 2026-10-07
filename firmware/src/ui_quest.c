@@ -9,7 +9,6 @@
  *
  * Part 1 (this file): helpers, sprites, the world and its scenes. Part 2 (ui_quest_scenes.c): boss, duel, equip.
  * Part 3 (ui_quest_screens.c): the screens. */
-#include "felucca_qfont.h"
 #include "felucca_qsprites.h"
 static uint32_t str_hash(uint32_t h, const char *s);   /* ui_draw.c */
 
@@ -96,13 +95,14 @@ static struct {
 static void q_spr(uint32_t id, int32_t x, int32_t y, int32_t s, int flip, int solid)   /* s = scale, solid = palette index or -1 */
 {
     const qspr_t *sp = &QSPR[id];
-    const uint8_t *d = QSPR_DATA + sp->off;
+    const uint8_t *d = QSPR_DATA + sp->off, *mk = d + ((uint32_t)sp->w * sp->h + 1u) / 2u;
     int32_t gx, gy, bx = flip ? 16 - sp->ox - sp->w : sp->ox;
+    uint32_t n = 0;
     for (gy = 0; gy < sp->h; gy++)
-        for (gx = 0; gx < sp->w; gx++) {
-            uint8_t v = d[gy * sp->w + gx];
+        for (gx = 0; gx < sp->w; gx++, n++) {
+            uint32_t v = (d[n >> 1] >> ((n & 1u) ? 0 : 4)) & 15u;
             int32_t px = x + s * (bx + (flip ? sp->w - 1 - gx : gx)), py = y + s * (sp->oy + gy);
-            if (v == 255u)
+            if (!((mk[n >> 3] >> (7u - (n & 7u))) & 1u))
                 continue;
             if (s == 1) cv_pset(px, py, QP(solid >= 0 ? (uint32_t)solid : v));
             else cv_rect(px, py, s, s, QP(solid >= 0 ? (uint32_t)solid : v));

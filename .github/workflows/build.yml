@@ -34,7 +34,7 @@ jobs:
       - name: Build the firmware package
         run: |
           set +e
-          ./build.sh > build.log 2>&1
+          sh ./build.sh > build.log 2>&1
           rc=$?
           cat build.log | tail -n 40
           if [ $rc -ne 0 ]; then
@@ -45,13 +45,14 @@ jobs:
       - name: Size of the app
         run: ls -l build/felucca.bin build/felucca.fwsc build/loader/ota.bin
       - name: Host tests
+        env: { SOAK_MIN: '1' }
         run: sh tests/run_tests.sh
       - uses: actions/upload-artifact@v4
         with:
           name: fm1-quest-firmware
           path: build/felucca.fwsc
       - name: Browser emulator (wasm)
-        run: cd quest && CC=zig ./build.sh
+        run: cd quest && CC=zig sh ./build.sh
       - name: Site (installer + editor + emulator)
         run: |
           python3 web/make_site.py build/felucca.fwsc quest-${{ github.run_number }} site

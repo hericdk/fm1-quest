@@ -202,7 +202,28 @@ let shown = false;
 function syncScreen() { const q = screenCorners.map(proj); scr.style.transform = homography(q); if (!shown) { shown = true; scr.style.visibility = 'visible'; } }
 
 // ---------------------------------------------------------------- motion: floats and sways; calmer on hover; leans towards the side the cursor is on
-const st = { hv: 0, tx: 0, ty: 0, zoom: 0, zt: 0, tv: 0, top: false, float: true }, BASE = -.6, SIGN = 1;       // SIGN = 1: the side near the cursor comes toward you; -1 flips it
+const st = { hv: 0, tx: 0, ty: 0, zoom: 0, zt: 0, tv: 0, top: false, float: true, lock: false, pix: false, pose: null }, BASE = -.6, SIGN = 1;       // SIGN = 1: the side near the cursor comes toward you; -1 flips it
+// ---- pixel-art / ordered-dither pass: ONLY the 3D body is redrawn (the LCD is a DOM layer above it and is never filtered)
+const pcv = document.createElement('canvas'); pcv.className = 'pix3d'; pcv.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;image-rendering:pixelated;pointer-events:none;display:none';
+cv.insertAdjacentElement('afterend', pcv);
+const pctx = pcv.getContext('2d', { willReadFrequently: true }), BAY = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+const pix = { size: 3, levels: 6, gamma: .62, gain: 1.15 };
+function pixPass() {
+  if (!st.pix) { if (pcv.style.display !== 'none') { pcv.style.display = 'none'; cv.style.visibility = ''; } return; }
+  const w = Math.max(1, Math.round(sw / pix.size)), h = Math.max(1, Math.round(sh / pix.size));
+  if (pcv.width !== w || pcv.height !== h) { pcv.width = w; pcv.height = h; }
+  pctx.imageSmoothingEnabled = true; pctx.imageSmoothingQuality = 'high'; pctx.clearRect(0, 0, w, h); pctx.drawImage(cv, 0, 0, w, h);
+  const im = pctx.getImageData(0, 0, w, h), d = im.data, L = pix.levels - 1;
+  for (let y = 0, i = 0; y < h; y++) for (let x = 0; x < w; x++, i += 4) {
+    const a = d[i + 3]; if (a < 96) { d[i + 3] = 0; continue; }
+    const t = (BAY[(y & 3) * 4 + (x & 3)] + .5) / 16 - .5;                       // ordered dither threshold, -0.5 .. 0.5
+    for (let c = 0; c < 3; c++) { const v = Math.pow(Math.min(1, d[i + c] / 255 * (a < 255 ? 255 / a : 1) * pix.gain), pix.gamma); d[i + c] = Math.max(0, Math.min(255, Math.round(Math.floor(Math.min(1, v) * L + .5 + t * .9) / L * 255))); }
+    d[i + 3] = 255;
+  }
+  pctx.putImageData(im, 0, 0);
+  pcv.style.display = ''; cv.style.visibility = 'hidden';
+}
+function setPix(on) { st.pix = !!on; stage.classList.toggle('pix', st.pix); }
 let D = 16, last = performance.now();
 function resize() { const w = Math.max(320, host.clientWidth || stage.clientWidth), h = clamp(Math.round(w * .52), 360, 680); stage.style.height = h + 'px'; sw = w; sh = h; renderer.setSize(w, h, true); camera.aspect = w / h; camera.fov = 24; const vf = camera.fov * Math.PI / 180; D = (W * 1.02 / 2) / (Math.tan(vf / 2) * camera.aspect); D = Math.max(D, (H * 1.12 / 2) / Math.tan(vf / 2)); camera.updateProjectionMatrix(); }
 addEventListener('resize', () => { if (host.classList.contains('is3d')) resize(); }); if (window.ResizeObserver) new ResizeObserver(() => { if (host.classList.contains('is3d') && host.clientWidth !== sw) resize(); }).observe(host);
@@ -211,13 +232,14 @@ function frame(now) {
   requestAnimationFrame(frame); if (!host.classList.contains('is3d') || !host.offsetParent || document.hidden) { last = now; return; }
   if (host.clientWidth && Math.abs(host.clientWidth - sw) > 1) resize();
   const dt = Math.min(.05, (now - last) / 1000); last = now; const t = now / 1000;
-  st.hv += ((mouse.in ? 1 : 0) - st.hv) * (1 - Math.exp(-dt * 5)); st.zoom += (st.zt - st.zoom) * (1 - Math.exp(-dt * 5.5)); st.tv += ((st.top ? 1 : 0) - st.tv) * (1 - Math.exp(-dt * 5));
-  const amp = st.float ? (1 - .8 * st.hv) * (1 - .65 * st.zoom) * (1 - .75 * st.tv) : 0;
+  st.hv += ((mouse.in && !st.lock ? 1 : 0) - st.hv) * (1 - Math.exp(-dt * 5)); st.zoom += (st.zt - st.zoom) * (1 - Math.exp(-dt * 5.5)); st.tv += ((st.top ? 1 : 0) - st.tv) * (1 - Math.exp(-dt * 5));
+  const amp = st.float && !st.lock && !st.pose ? (1 - .8 * st.hv) * (1 - .65 * st.zoom) * (1 - .75 * st.tv) : 0;
   st.tx += ((-mouse.x * SIGN * .2 * st.hv) - st.tx) * (1 - Math.exp(-dt * 7)); st.ty += ((mouse.y * .12 * st.hv) - st.ty) * (1 - Math.exp(-dt * 7));
   dev.rotation.y = st.tx + Math.sin(t * .55) * .24 * amp + Math.sin(t * .21 + 2) * .05 * amp;
   dev.rotation.x = lerp(BASE, 0, st.tv) - st.ty * (1 - .5 * st.tv) + Math.sin(t * .43 + 1) * .05 * amp;
   dev.rotation.z = Math.sin(t * .37) * .025 * amp;
-  const bob = Math.sin(t * .9) * .09 * Math.max(amp, st.float ? .25 : 0); root.position.y = bob;
+  if (st.pose) { dev.rotation.x = st.pose[0]; dev.rotation.y = st.pose[1]; dev.rotation.z = st.pose[2]; }
+  const bob = st.lock || st.pose ? 0 : Math.sin(t * .9) * .09 * Math.max(amp, st.float ? .25 : 0); root.position.y = bob;
   shadow.scale.set(9.6 - bob * 3, 3.6 - bob, 1); shadow.material.opacity = clamp(.55 - bob * 1.2, .2, .7); shadow.position.y = -3.4 - bob * .3;
   root.updateMatrixWorld(true);
   // camera: full view, or glide towards the screen
@@ -236,7 +258,7 @@ function frame(now) {
   });
   const oc = octNow(), kb = kbdOn(); if (oc !== octLab.last) { octLab.last = oc; octLab.redraw(); } if (oc !== wLab.last || kb !== wLab.lastK) { wLab.last = oc; wLab.lastK = kb; wLab.forEach(l => l.redraw()); }
   Object.entries(knobs).forEach(([id, k]) => { k.pg.rotation.z = -(sim.ang[id] || 0) * Math.PI / 180; });
-  renderer.render(scene, camera); syncScreen(); mirror();
+  renderer.render(scene, camera); pixPass(); syncScreen(); mirror();
   // labels
   Object.entries(kl).forEach(([id, o]) => { const q = proj(o.p), src = id.startsWith('k') ? (host.querySelector(`[data-l=${id}]`) || {}).textContent : '', val = (host.querySelector(`[data-v=${id}]`) || {}).textContent || ''; o.b.textContent = id.startsWith('k') ? src : ''; o.i.textContent = id.startsWith('k') ? val : ''; o.d.style.transform = `translate(${q[0]}px,${q[1]}px) translate(-50%,0)`; o.d.style.opacity = id.startsWith('k') && (src === '—' || !src) ? .3 : 1; });
   const sv = n => ((host.querySelector(`[data-v=${n}]`) || {}).textContent || '').trim(), line = `PRESET ${sv('presets').replace(/\D+/g, '') || '1'}  ·  HERO ${sv('algo').replace(/\D+/g, '') || '1'}  ·  OCT ${octNow() > 0 ? '+' : ''}${octNow()}  ·  MASTER ${sv('master') || ''}`; if (statusEl.textContent !== line) statusEl.textContent = line;
@@ -267,9 +289,22 @@ mini.querySelector('.mx').onclick = () => setMini(false);
 mini.querySelector('.ms').onclick = () => { mst.s = (mst.s + 1) % MS.length; placeMini(); saveMini(); };
 const SVG = { mini: '<svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="14" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="12" y="10" width="8" height="6" rx="1.2" fill="currentColor"/></svg>', zoom: '<svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M15.2 15.2 21 21M10.5 7.8v5.4M7.8 10.5h5.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>', top: '<svg viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="9" y="8.4" width="6" height="4" rx="1" fill="currentColor"/><path d="M5 15.5h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="1.6 2.2"/></svg>' };
 const tools = document.createElement('div'); tools.className = 'tools3d';
-tools.innerHTML = [['mini', 'miniatura da tela (arraste para onde quiser)'], ['zoom', 'aproximar a tela'], ['top', 'vista de cima']].map(([k, t]) => `<button data-t="${k}" title="${t}">${SVG[k]}</button>`).join(''); stage.append(tools);
+const LANGQ = (new URLSearchParams(location.search).get('lang') || document.documentElement.lang || 'pt').slice(0, 2);
+const PXT = { pt: ['Fixar o FM-1 e ver em pixel art', 'Soltar o FM-1', 'Experimente em um tablet, iPad ou celular: este botão funciona melhor lá. Ele fixa o FM-1 no centro e você toca nas teclas sem o 3D se mover.'],
+  en: ['Lock the FM-1 and see it in pixel art', 'Unlock the FM-1', 'Try it on a tablet, iPad or phone: this button works best there. It locks the FM-1 in the centre so you can play by touch without the 3D moving.'],
+  es: ['Fijar el FM-1 y verlo en pixel art', 'Soltar el FM-1', 'Pruébalo en una tableta, iPad o móvil: este botón funciona mejor allí. Fija el FM-1 en el centro y tocas las teclas sin que el 3D se mueva.'] }[LANGQ] || null;
+const PXL = PXT || ['Fixar o FM-1 e ver em pixel art', 'Soltar o FM-1', 'Experimente em um tablet, iPad ou celular: este botão funciona melhor lá.'];
+SVG.pix = '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="4" height="4" fill="currentColor"/><rect x="11" y="3" width="4" height="4" fill="currentColor"/><rect x="7" y="7" width="4" height="4" fill="currentColor"/><rect x="15" y="7" width="4" height="4" fill="currentColor"/><rect x="3" y="11" width="4" height="4" fill="currentColor"/><rect x="11" y="11" width="4" height="4" fill="currentColor"/><path d="M13 21v-4a3 3 0 0 1 6 0v4z" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="12" y="19" width="8" height="3" fill="currentColor"/></svg>';
+tools.innerHTML = [['mini', 'miniatura da tela (arraste para onde quiser)'], ['zoom', 'aproximar a tela'], ['top', 'vista de cima']].map(([k, t]) => `<button data-t="${k}" title="${t}">${SVG[k]}</button>`).join('')
+  + `<button data-t="pix" aria-pressed="false" aria-label="${PXL[0]}" aria-describedby="pixtip">${SVG.pix}</button><span id="pixtip" class="pixtip" role="tooltip">${PXL[2]}</span>`; stage.append(tools);
+function setPixLock(on) {
+  st.lock = on; st.pix = on; if (on) { st.top = false; st.zt = 0; st.tx = 0; st.ty = 0; tools.querySelector('[data-t=top]').classList.remove('on'); tools.querySelector('[data-t=zoom]').classList.remove('on'); }
+  if (on) pix.size = Math.max(2, Math.round(sw / 420));
+  const b = tools.querySelector('[data-t=pix]'); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.setAttribute('aria-label', on ? PXL[1] : PXL[0]); stage.classList.toggle('pix', on);
+}
+G.addEventListener && G.addEventListener('message', e => { const m = e.data || {}; if (m.fm1cmd === 'pixlock') setPixLock(!!m.on); });
 function setZoom(on) { st.zt = on ? 1 : 0; tools.querySelector('[data-t=zoom]').classList.toggle('on', on); const z = document.getElementById('s-zoom'); if (z) { z.classList.toggle('on', on); z.textContent = on ? 'ver painel todo' : 'aproximar tela'; } }
-tools.onclick = e => { const b = e.target.closest('button'); if (!b) return; const k = b.dataset.t; if (k === 'mini') setMini(mini.hidden); else if (k === 'zoom') setZoom(!st.zt); else { st.top = !st.top; b.classList.toggle('on', st.top); } };
+tools.onclick = e => { const b = e.target.closest('button'); if (!b) return; const k = b.dataset.t; if (k === 'mini') setMini(mini.hidden); else if (k === 'zoom') setZoom(!st.zt); else if (k === 'pix') setPixLock(!st.lock); else { st.top = !st.top; b.classList.toggle('on', st.top); } };
 
 // ---------------------------------------------------------------- toolbar
 const r1 = host.querySelector('.stool .r1');
@@ -282,5 +317,5 @@ z.onclick = () => setZoom(!st.zt);
 document.getElementById('s-float').onchange = e => { st.float = e.target.checked; };
 let on = true; try { on = localStorage.getItem('fm1lab.sim3d2') !== '0'; } catch (e) {}
 set3d(on); if (mst.on) setMini(true);
-G.SIM3D = { scene, camera, renderer, dev, st };
+G.SIM3D = { scene, camera, renderer, dev, st, setPix, pix, corners: () => screenCorners.map(proj), size: () => [sw, sh] };
 })(window);

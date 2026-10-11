@@ -133,6 +133,7 @@ def main(out, pkg, version):
             html = re.sub(r'(src|href)="(assets|editor|firmware|media)/', lambda mm: f'{mm.group(1)}="../{mm.group(2)}/', html)
             html = html.replace("url(assets/", "url(../assets/").replace('"sim/index.html?embed=1', '"../sim/index.html?embed=1')
         html = html.replace("sim/index.html?embed=1", "sim/index.html?embed=1&v=" + simv)
+        html = html.replace("__BUILD__", simv).replace("__BUILDURL__", P + "build.json")
         d = out / path
         d.mkdir(parents=True, exist_ok=True)
         (d / "index.html").write_text(html, encoding="utf-8")
@@ -148,6 +149,7 @@ def main(out, pkg, version):
     for f in ("fukiai.ttf", "FUKIAI-LICENSE.txt"):
         if (REPO / "web" / f).exists():
             shutil.copy(REPO / "web" / f, out / "editor" / f)
+    (out / "build.json").write_text(json.dumps({"build": simv, "version": version}), encoding="utf-8")
     (out / "robots.txt").write_text("User-agent: *\nAllow: /\n", encoding="utf-8")
     (out / ".nojekyll").write_text("", encoding="utf-8")
     print("package:", name, product, meta["sha256"][:12])

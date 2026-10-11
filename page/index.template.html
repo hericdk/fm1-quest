@@ -6,6 +6,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title data-i="title"></title>
 <!--SEO-->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-8CREY6XFYZ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  (function () {
+    var ck = null; try { ck = localStorage.getItem("fm1q.cookies"); } catch (e) {}
+    gtag("consent", "default", { analytics_storage: ck === "yes" ? "granted" : "denied", ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied" });
+    gtag("js", new Date());
+    if (!/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) gtag("config", "G-8CREY6XFYZ");     /* local tests never count as visits */
+  })();
+</script>
 <script>(function(){try{var B="__BUILD__";fetch("__BUILDURL__?"+Date.now(),{cache:"no-store"}).then(function(r){return r.json()}).then(function(j){if(j&&j.build&&j.build!==B){var k="fm1q.reload."+j.build;if(!sessionStorage.getItem(k)){sessionStorage.setItem(k,"1");var u=new URL(location.href);u.searchParams.set("v",j.build);location.replace(u.toString());}}}).catch(function(){});}catch(e){}})();</script>
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self' data:; connect-src 'self' https://api.github.com; frame-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <style>
@@ -166,6 +177,13 @@
 
 
 
+  #ckbar { position: fixed; left: 16px; bottom: 16px; z-index: 120; max-width: min(460px, calc(100vw - 32px)); background: var(--tile); border: 1px solid var(--gold); box-shadow: inset 0 0 0 2px var(--bg), inset 0 0 0 3px #6a4030, 0 8px 28px #0008; padding: 14px 16px; font-size: 14px; line-height: 1.45; }
+  #ckbar[hidden] { display: none; }
+  #ckbar p { margin: 0 0 10px; }
+  #ckbar .ckb { display: flex; gap: 8px; flex-wrap: wrap; }
+  #ckbar button { font: 600 14px/1 "Pixelify Sans", monospace; background: var(--bg); color: var(--fg); border: 1px solid var(--gold); padding: 9px 14px; cursor: pointer; }
+  #ckbar button#ck-yes { background: var(--hi); color: #1e1418; }
+  #ckbar button:focus-visible { outline: 2px solid var(--hi); outline-offset: 2px; }
   #igwrap, #ytwrap { position: relative; display: inline-flex; }
   #igtip, #yttip { display: none; position: absolute; top: calc(100% + 10px); right: -40px; width: min(300px, 82vw); background: var(--tile); border: 1px solid var(--gold); box-shadow: inset 0 0 0 2px var(--bg), inset 0 0 0 3px #6a4030; padding: 12px 14px; font-size: 13px; line-height: 1.45; color: var(--fg); z-index: 80; text-align: left; }
   #yttip { right: -8px; }
@@ -386,7 +404,13 @@
   <p class="love rv" data-i="f_love"></p>
   <p class="grey rv" data-i="ai"></p>
   <p class="small rv" style="margin-top:22px" data-i="f_legal"></p>
+  <p class="small rv"><a href="#cookies" id="ck-open" data-i="ck_open"></a></p>
 </footer>
+
+<div id="ckbar" role="region" aria-live="polite" aria-label="Cookies" hidden>
+  <p data-i="ck_text"></p>
+  <div class="ckb"><button type="button" id="ck-yes" data-i="ck_yes"></button><button type="button" id="ck-no" data-i="ck_no"></button></div>
+</div>
 
 <script src="assets/js/gsap.min.js"></script>
 <script src="assets/js/ScrollTrigger.min.js"></script>
@@ -401,6 +425,7 @@ const LANGS = ["pt", "en", "es"];
 let LANG = LANGS.includes(document.documentElement.lang.slice(0, 2)) ? document.documentElement.lang.slice(0, 2) : "pt";     /* each language is its own page (/, /en/, /es/) */
 const tx = (key) => (I18N[key] ? I18N[key][LANG] : "");
 const t = (k) => tx("j_" + k);
+const ga = (name, p) => { try { gtag("event", name, p || {}); } catch (e) {} };
 function applyLang(l) {
   LANG = l; document.documentElement.lang = l === "pt" ? "pt-BR" : l;
   document.querySelectorAll("[data-i]").forEach((e) => { const v = tx(e.dataset.i); if (v) e.innerHTML = v; });
@@ -413,7 +438,7 @@ function applyLang(l) {
   const sf = document.getElementById("simframe"); if (sf && sf.contentWindow) { try { sf.contentWindow.postMessage({ fm1lang: l }, "*"); } catch (e) {} }
   if (window.ScrollTrigger) ScrollTrigger.refresh();
 }
-document.querySelectorAll("#lang a").forEach((a) => a.addEventListener("click", () => { try { localStorage.setItem("fm1lang", a.dataset.lang); } catch (e) {} }));
+document.querySelectorAll("#lang a").forEach((a) => a.addEventListener("click", () => { ga("lang_switch", { lang: a.dataset.lang }); try { localStorage.setItem("fm1lang", a.dataset.lang); } catch (e) {} }));
 
 /* ---------- menu ---------- */
 const menu = (on) => { document.body.classList.toggle("menu", on); $("menubtn").setAttribute("aria-expanded", on); };
@@ -444,6 +469,7 @@ const sfr = $("simframe"); if (sfr) sfr.addEventListener("load", () => sfr.conte
 const simPost = (m) => { try { $("simframe").contentWindow.postMessage(m, "*"); } catch (e) {} };
 const flash = (key, extra = "") => { prog.hidden = false; bar.parentElement.style.display = "none"; st.textContent = tx(key).replace("{n}", extra); clearTimeout(flash.t); flash.t = setTimeout(() => { st.textContent = ""; prog.hidden = true; bar.parentElement.style.display = ""; }, 9000); };
 $("connect").addEventListener("click", async () => {
+  ga("connect_click");
   simPost({ fm1cmd: "midi" });
   if (navigator.requestMIDIAccess) { try { await navigator.requestMIDIAccess({ sysex: true }); } catch (e) { flash("d_conn_perm"); } }   /* the browser asks here, in the page; the hidden editor then inherits the permission */
   bridgePost({ fm1cmd: "connect" });
@@ -528,7 +554,7 @@ $("pv1").addEventListener("click", () => { bridgePost({ fm1cmd: "preview", k: TA
   $(T.file).addEventListener("change", async () => {
     const f = $(T.file).files[0]; $(T.file).value = ""; if (!f || upBusy) return; const r = await acceptFile(f, kind);
     if (r === "big") { say(p, "d_big", "", true); return; } if (r !== "ok") { say(p, "d_bad", "", true); return; }
-    say(p, "d_sending");
+    say(p, "d_sending"); ga("import_send", { kind: p === 1 ? "sample" : "song" });
     if (p === 1) bridgePost({ fm1cmd: "send-sample", k: T.sel, file: f });                  /* same origin, the editor's own code encodes it and writes it over USB */
     else bridgePost({ fm1cmd: "send-song", kind: T.kind, k: T.sel, p, file: f });
   });
@@ -552,6 +578,7 @@ const sayK = (k, arg = "") => setStatus(t(k) + arg);
 const short = (m) => String(m).split(/(?<=\.)\s/)[0];                  /* the status line gets the first sentence; the whole text goes to the log */
 const hasMsg = (c) => !!I18N["j_" + c];
 const failed = (e) => {
+  ga("install_error", { reason: String((e && e.message) || e).slice(0, 80) });
   if (e && e.code === "notfound") { setBar(0); setStatus(t("plugmsg")); st.dataset.plug = "1"; plugLabel(true); return; }   /* just not plugged in: not an error, no log */
   const code = e && e.code && hasMsg(e.code) ? e.code : null;
   const full = code ? t(code) + (e.detail || "") : (e && e.message) || t("unknown");
@@ -604,12 +631,13 @@ const step = (k, a) => {
   if (k === "loader") sayK("loader");
   if (k === "write") { sayK("write"); setBar(((74 + a) / total) * 100); }
   if (k === "reboot") sayK("reboot");
-  if (k === "done") { setBar(100, "ok"); setStatus(t("done") + ". " + t("replug"), "ok"); }
+  if (k === "done") { setBar(100, "ok"); setStatus(t("done") + ". " + t("replug"), "ok"); ga("install_done"); }
 };
-const stopped = () => { setStatus(t("stopped"), "bad"); setBar(100, "bad"); log(t("interrupted")); showLog(); };
+const stopped = () => { ga("install_stopped"); setStatus(t("stopped"), "bad"); setBar(100, "bad"); log(t("interrupted")); showLog(); };
 
 async function runInstall() {
   if (writing || !image) return;
+  ga("install_start");
   lockAll(true); setBar(0); setStatus(t("start"));
   simPost({ fm1cmd: "midioff" }); bridgePost({ fm1cmd: "disconnect" });                     /* the 3D model and the upload panel let go of the MIDI ports: only the installer talks to the FM-1 while it writes */
   let midi;
@@ -633,7 +661,7 @@ $("install").addEventListener("click", runInstall);
 $("install2").addEventListener("click", runInstall);
 
 /* ---------- back to the official V15: only the exact official file, a backup first, the same update path as M-UPGRADE ---------- */
-$("rollback").addEventListener("click", () => { $("stockbox").open = true; $("voltar").scrollIntoView({ behavior: "smooth" }); });
+$("rollback").addEventListener("click", () => { ga("rollback_click"); $("stockbox").open = true; $("voltar").scrollIntoView({ behavior: "smooth" }); });
 $("stock-saved").addEventListener("change", () => lockAll(writing));
 $("stock-file").addEventListener("change", async () => {
   const f = $("stock-file").files[0]; stock = null; $("stock-msg").textContent = ""; lockAll(writing);
@@ -644,6 +672,7 @@ $("stock-file").addEventListener("change", async () => {
 });
 $("stock-go").addEventListener("click", async () => {
   if (writing || !stock || !$("stock-saved").checked || !confirm(t("stockConfirm"))) return;
+  ga("stock_restore_start");
   lockAll(true); setBar(0); setStatus(t("start")); simPost({ fm1cmd: "midioff" }); bridgePost({ fm1cmd: "disconnect" });
   let midi;
   try { midi = midiAccess || await navigator.requestMIDIAccess({ sysex: true }); }
@@ -661,6 +690,30 @@ $("stock-go").addEventListener("click", async () => {
     }
   } catch (e) { failed(e); }
   lockAll(false);
+});
+
+/* ---------- analytics: Google Analytics only, cookies only after "accept"; clicks on the installer and on outside links are counted ---------- */
+const CK = "fm1q.cookies";
+const ckGet = () => { try { return localStorage.getItem(CK); } catch (e) { return null; } };
+const ckSet = (v) => { try { localStorage.setItem(CK, v); } catch (e) {} gtag("consent", "update", { analytics_storage: v === "yes" ? "granted" : "denied" }); };
+const ckBar = $("ckbar");
+$("ck-yes").addEventListener("click", () => { ckSet("yes"); ckBar.hidden = true; });
+$("ck-no").addEventListener("click", () => { ckSet("no"); ckBar.hidden = true; });
+$("ck-open").addEventListener("click", (e) => { e.preventDefault(); ckBar.hidden = false; $("ck-yes").focus(); });
+if (ckGet() === null) ckBar.hidden = false;
+document.addEventListener("click", (e) => {
+  const a = e.target.closest && e.target.closest("a[href]"); if (!a) return;
+  let u; try { u = new URL(a.href, location.href); } catch (x) { return; }
+  if (!/^https?:$/.test(u.protocol)) return;
+  if (u.host !== location.host) {
+    const h = u.hostname.replace(/^www\./, "");
+    const who = /youtube\.com|youtu\.be/.test(h) ? "youtube" : /instagram\.com/.test(h) ? "instagram" : /raincake\.com\.br/.test(h) ? "raincake" : /github\.com/.test(h) ? "github" : /reddit\.com/.test(h) ? "reddit" : "other";
+    ga("external_link", { target: who, link_domain: h, link_url: u.href.slice(0, 100) });
+  } else if (/\/editor\/?$/.test(u.pathname)) ga("editor_open");
+}, true);
+addEventListener("message", (e) => {                                  /* the 3D model reports its two interesting clicks */
+  if (e.origin !== location.origin || !e.data || !e.data.fm1ga) return;
+  if (e.data.fm1ga === "pixel_lock") ga("pixel_lock", { on: !!e.data.on }); else if (e.data.fm1ga === "sim_power_on") ga("sim_power_on");
 });
 </script>
 </body>

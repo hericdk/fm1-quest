@@ -89,7 +89,7 @@
         await W.ctx.resume();
         send({ t: 'adc', ch: 4, v: W.master });
         setTimeout(() => send({ t: 'start' }), 900);
-        W.on = true; cv.style.cursor = 'default';
+        W.on = true; cv.style.cursor = 'default'; try { parent.postMessage({ fm1ga: 'sim_power_on' }, location.origin); } catch (e) {}
       } catch (e) { starting = false; say('ERROR', String(e.message || e).slice(0, 38)); }
     };
     cv.addEventListener('pointerdown', start);

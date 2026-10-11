@@ -284,3 +284,11 @@ k("ig_tip", "<b>Side quests da vida real</b><br>Meu espaço pessoal para compart
 k("yt_tip", "<b>Demonstrações e Atualizações</b><br>Vídeos de atualizações do Quest em ação, guias de desenvolvimento para que mais pessoas possam criar com a sua criatividade e talvez até bastidores do que eu ando fazendo com robótica (estou estudando para montar uma arena de robôs feitos em impressão 3D e placa mãe barata com ESP32, numa vibe de Big Hero 6 com Megaman, rs).",
   "<b>Demos and Updates</b><br>Videos of Quest updates in action, development guides so more people can create with their own creativity, and maybe even behind the scenes of what I am doing with robotics (I am studying to build an arena of robots made with 3D printing and a cheap ESP32 board, in a Big Hero 6 meets Mega Man vibe, lol).",
   "<b>Demostraciones y actualizaciones</b><br>Videos de las actualizaciones de Quest en acción, guías de desarrollo para que más gente pueda crear con su creatividad y quizá hasta el detrás de cámaras de lo que ando haciendo con robótica (estoy estudiando para montar una arena de robots impresos en 3D con una placa barata ESP32, con vibra de Big Hero 6 y Mega Man, jaja).")
+
+# ---------- cookies (Google Analytics only)
+k("ck_text", "Este site usa cookies apenas para o Google Analytics (contar visitas e cliques). Nada é usado para anúncios.",
+  "This site uses cookies only for Google Analytics (counting visits and clicks). Nothing is used for ads.",
+  "Este sitio usa cookies solo para Google Analytics (contar visitas y clics). No se usa nada para anuncios.")
+k("ck_yes", "Aceitar", "Accept", "Aceptar")
+k("ck_no", "Recusar", "Decline", "Rechazar")
+k("ck_open", "Cookies e estatísticas (Google Analytics)", "Cookies and statistics (Google Analytics)", "Cookies y estadísticas (Google Analytics)")

@@ -300,6 +300,7 @@ tools.innerHTML = [['mini', 'miniatura da tela (arraste para onde quiser)'], ['z
 function setPixLock(on) {
   st.lock = on; st.pix = on; if (on) { st.top = false; st.zt = 0; st.tx = 0; st.ty = 0; tools.querySelector('[data-t=top]').classList.remove('on'); tools.querySelector('[data-t=zoom]').classList.remove('on'); }
   if (on) pix.size = Math.max(2, Math.round(sw / 420));
+  try { parent.postMessage({ fm1ga: 'pixel_lock', on: !!on }, location.origin); } catch (e) {}
   const b = tools.querySelector('[data-t=pix]'); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.setAttribute('aria-label', on ? PXL[1] : PXL[0]); stage.classList.toggle('pix', on);
 }
 G.addEventListener && G.addEventListener('message', e => { const m = e.data || {}; if (m.fm1cmd === 'pixlock') setPixLock(!!m.on); });

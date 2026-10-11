@@ -136,6 +136,17 @@
   .vplay::after { content: ""; border-left: 30px solid var(--hi); border-top: 19px solid transparent; border-bottom: 19px solid transparent; margin-left: 8px; }
   .vph b { display: block; font: 400 30px/1.15 "Jacquarda Bastarda 9", serif; color: var(--hi); letter-spacing: .02em; }
   .vph span { display: block; margin-top: 6px; font-size: 15px; color: var(--dim); }
+  button.vph { background: none; border: 0; color: inherit; font: inherit; cursor: pointer; width: 100%; height: 100%; display: grid; place-items: center; align-content: center; }
+  .vposter { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
+  .vph b { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }      /* the title stays for screen readers; the poster already has its own text */
+  .vph span { position: absolute; left: 0; right: 0; bottom: 16px; font-size: 17px; color: #fff; }
+  .vph b, .vph span, .vph .vplay { text-shadow: 0 2px 10px #000; }
+  .vph .vplay { background: rgba(13,10,15,.55); position: relative; z-index: 2; margin-bottom: 0; }
+  .vph span { z-index: 2; text-shadow: 0 2px 8px #000, 0 0 2px #000; }
+  .vph:hover .vplay, .vph:focus-visible .vplay { background: var(--hi); }
+  .vph:hover .vplay::after, .vph:focus-visible .vplay::after { border-left-color: #1e1418; }
+  .vph:focus-visible { outline: 3px solid var(--hi); outline-offset: -6px; }
+  .vlink { text-align: center; margin: 10px 0 0; }
   #controles { padding-top: 40px; padding-bottom: 36px; }
   kbd { font: 600 13px/1 ui-monospace, monospace; background: #2b2830; color: #f2e2c4; border: 1px solid #5a5560; border-bottom-width: 3px; border-radius: 4px; padding: 3px 7px; }
   h2 .sub { display: block; margin-top: 6px; font: 400 16px/1.4 "Pixelify Sans", monospace; color: var(--dim); letter-spacing: 0; }
@@ -265,6 +276,7 @@
     <a href="#modelo" data-i="m_model"></a>
     <a href="#controles" data-i="m_ctrl"></a>
     <a href="#sobre" data-i="m_about"></a>
+    <a href="#video" data-i="m_video"></a>
     <a href="#novidades" data-i="m_news"></a>
     <a href="#instalar" data-i="m_install"></a>
     <a href="#voltar" data-i="m_back"></a>
@@ -358,6 +370,18 @@
       <div class="tile rv" style="--c: var(--yellow)"><b data-i="tile3_b"></b><span data-i="tile3_s"></span></div>
       <div class="tile rv" style="--c: var(--orange)"><b data-i="tile4_b"></b><span data-i="tile4_s"></span></div>
     </div>
+  </section>
+
+  <section id="video">
+    <div class="vstage">
+      <div class="vframe" id="vframe">
+        <button type="button" class="vph" id="vplay" data-it="a_video:aria-label">
+          <img class="vposter" src="assets/video-thumb.jpg" alt="" width="1280" height="720" loading="lazy">
+          <div class="vplay"></div><b data-i="v_soon"></b><span data-i="v_hint"></span>
+        </button>
+      </div>
+    </div>
+    <p class="small vlink"><a id="vlink" href="https://www.youtube.com/watch?v=ITECI2cEHsU" target="_blank" rel="noopener" data-i="v_link"></a></p>
   </section>
 
   <section id="novidades">
@@ -460,9 +484,18 @@ function motion() {
   gsap.registerPlugin(ScrollTrigger);
   ScrollTrigger.batch(".rv", { start: "top 90%", once: true,
     onEnter: (els) => gsap.to(els, { opacity: 1, y: 0, duration: .95, ease: "power3.out", stagger: .12, overwrite: true }) });
+  const vf = document.querySelector(".vframe");
+  if (vf) gsap.fromTo(vf, { scale: .62 }, { scale: 1, ease: "none", scrollTrigger: { trigger: "#video", start: "top 85%", end: "top 15%", scrub: .6 } });   /* the video grows from the middle as you scroll */
   addEventListener("load", () => ScrollTrigger.refresh());
 }
 motion();
+/* the YouTube player is only fetched when the visitor asks for it (youtube-nocookie: no cookies before the play) */
+$("vplay").addEventListener("click", () => {
+  const f = document.createElement("iframe");
+  f.src = "https://www.youtube-nocookie.com/embed/ITECI2cEHsU?autoplay=1&rel=0&cc_load_policy=1&cc_lang_pref=" + (LANG === "pt" ? "pt" : "en") + "&hl=" + LANG;
+  f.title = "FM1 Quest v0.2"; f.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"; f.allowFullscreen = true; f.referrerPolicy = "strict-origin-when-cross-origin";
+  $("vframe").replaceChildren(f); try { ga("video_play"); } catch (e) {}
+});
 
 /* ---------- installer ---------- */
 const sfr = $("simframe"); if (sfr) sfr.addEventListener("load", () => sfr.contentWindow.postMessage({ fm1lang: LANG }, "*"));

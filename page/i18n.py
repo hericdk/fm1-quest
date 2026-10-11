@@ -181,9 +181,10 @@ k("j_interrupted", "interrompido", "interrupted", "interrumpido")
 
 # ---------- vídeo, ciclo do dia e idioma (adicionados depois) ----------
 k("m_video", "Vídeo", "Video", "Vídeo")
-k("v_soon", "Vídeo em breve", "Video coming soon", "Video próximamente")
-k("v_hint", "O vídeo do FM1 Quest vai aparecer aqui.", "The FM1 Quest video will appear here.", "El video de FM1 Quest aparecerá aquí.")
-k("a_video", "Espaço reservado para o vídeo do YouTube", "Placeholder for the YouTube video", "Espacio reservado para el video de YouTube")
+k("v_soon", "Veja o FM1 Quest em 5 minutos", "See FM1 Quest in 5 minutes", "Mira FM1 Quest en 5 minutos")
+k("v_hint", "Clique para assistir", "Click to watch", "Haz clic para ver")
+k("v_link", "Assistir no YouTube", "Watch on YouTube", "Ver en YouTube")
+k("a_video", "Reproduzir o vídeo do FM1 Quest v0.2", "Play the FM1 Quest v0.2 video", "Reproducir el video de FM1 Quest v0.2")
 k("c10_h", "Dia e noite na aventura", "Day and night in the adventure", "Día y noche en la aventura")
 k("c10_p", "A aventura começa na vila, e a hora muda a cada vez que você liga o aparelho: o amanhecer e o fim da tarde são os favoritos, mas também pode ser tarde ou noite. No amanhecer, o sol sobe atrás das casas com círculos de brilho; à tarde, o sol brilha e tudo está iluminado; no pôr do sol, as tochas acendem conforme o grupo passa; à noite, aparece a lua crescente. Enquanto o grupo caminha, a música começa: quatro fileiras de blocos, uma para cada herói, formam o loop. Depois de alguns segundos (de 5 a 60, ajustável no menu Settings) o grupo segue sozinho para a floresta, onde enfrenta slimes e morcegos.",
   "The adventure starts in the village, and the hour changes every time you switch the device on: dawn and sunset are the favourites, but it can also be afternoon or night. At dawn the sun rises behind the houses with circles of light; in the afternoon the sun shines and everything is lit; at sunset the torches light up as the party walks past; at night a crescent moon appears. While the party walks, the music starts: four rows of blocks, one for each hero, build the loop. After a few seconds (5 to 60, adjustable in the Settings menu) the party goes on by itself into the forest, where it fights slimes and bats.",

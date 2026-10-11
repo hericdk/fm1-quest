@@ -581,7 +581,7 @@ applyLang(LANG);
 
 /* ---------- load and check the package ---------- */
 (async () => {
-  if (!navigator.requestMIDIAccess) { setStatus(t("nomidi"), "bad"); return; }
+  if (!navigator.requestMIDIAccess) { setStatus(t(window.isSecureContext === false ? "insecure" : "nomidi"), "bad"); return; }
   try {
     const r = await fetch(meta.pkg);
     if (!r.ok) throw new Error(`${meta.pkg}: HTTP ${r.status}`);

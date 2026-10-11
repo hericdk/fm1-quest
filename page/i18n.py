@@ -150,6 +150,7 @@ k("desc", "Um RPG em pixel art para o seu FM-1: firmware personalizado para o M-
 k("j_install", "Instalar no FM1", "Install on FM1", "Instalar en el FM1")
 k("j_plug", "Plugue o FM1", "Plug in the FM1", "Conecta el FM1")
 k("j_plugmsg", "FM-1 não encontrado. Plugue o FM1 no computador por USB.", "FM-1 not found. Plug the FM1 into the computer by USB.", "FM-1 no encontrado. Conecta el FM1 al ordenador por USB.")
+k("j_insecure", "Esta página precisa estar em HTTPS para falar com o FM-1. Se o certificado do endereço ainda está sendo emitido, tente de novo em alguns minutos.", "This page has to be served over HTTPS to talk to the FM-1. If the certificate for this address is still being issued, try again in a few minutes.", "Esta página necesita HTTPS para comunicarse con el FM-1. Si el certificado de esta dirección aún se está emitiendo, inténtalo de nuevo en unos minutos.")
 k("j_nomidi", "Este navegador não consegue instalar. Abra a página no Chrome ou no Edge.", "This browser cannot do it. Open the page in Chrome or Edge.", "Este navegador no puede instalar. Abre la página en Chrome o Edge.")
 k("j_loadfail", "Não foi possível carregar: ", "Could not load: ", "No se pudo cargar: ")
 k("j_start", "Iniciando", "Starting", "Iniciando")

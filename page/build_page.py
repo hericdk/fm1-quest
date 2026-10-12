@@ -98,7 +98,7 @@ def main(out, pkg, version):
             if e["clips"]:
                 def fig(c):
                     name, cap = (c, "") if isinstance(c, str) else (c[0], c[1] if L == "pt" else c[2])
-                    return (f'<figure><video src="{P}media/{name}.mp4" autoplay loop muted playsinline preload="metadata" aria-hidden="true"></video>'
+                    return (f'<figure><video src="{P}media/{name}.mp4" loop muted playsinline preload="none" aria-hidden="true"></video>'
                             + (f'<figcaption>{cap}</figcaption>' if cap else "") + "</figure>")
                 parts.append('<div class="clips">' + "".join(fig(c) for c in e["clips"]) + "</div>")
             parts.append(f'<p>{e[L]}</p>')

@@ -1,8 +1,8 @@
 /* TL;DR block: RPG panel (the vector frame is a 9-slice: the corners keep their size, the edges stretch with the content) */
 #tldr { padding-top: 10px; }
 #tldr .tl-sub { margin: -4px 0 14px; color: var(--hi); font: 600 20px/1.2 "Pixelify Sans", monospace; }
-.tl-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 -2px 22px; position: relative; z-index: 2; }
-.tl-tab { font: 600 15px/1 "Pixelify Sans", monospace; color: var(--dim); background: #2a1c16; border: 2px solid #5a3a28; border-bottom: 0; padding: 11px 14px 9px; cursor: pointer; position: relative; top: 2px; transition: transform .16s cubic-bezier(.34,1.56,.64,1), color .15s; box-shadow: inset 0 2px 0 #4a3020; }
+.tl-tabs { display: flex; flex-wrap: nowrap; gap: 5px; margin: 0 0 -2px 8px; position: relative; z-index: 2; }
+.tl-tab { flex: 1 1 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; font: 600 14px/1 "Pixelify Sans", monospace; color: var(--dim); background: #2a1c16; border: 2px solid #5a3a28; border-bottom: 0; padding: 11px 8px 9px; cursor: pointer; position: relative; top: 2px; transition: transform .16s cubic-bezier(.34,1.56,.64,1), color .15s; box-shadow: inset 0 2px 0 #4a3020; }
 .tl-tab small { color: #7a6050; }
 @media (hover: hover) { .tl-tab:hover { color: var(--fg); transform: translateY(-2px); } }
 .tl-tab.on { color: #1e1418; background: var(--hi); border-color: var(--gold); transform: translateY(-4px); box-shadow: inset 0 2px 0 #fff6, 0 -4px 14px rgba(240,200,96,.25); }
@@ -21,9 +21,9 @@
 .pxb.item:hover, .pxb.item:active, .pxb.item.on { transform: none; box-shadow: none; background: transparent; }
 .pxb.item .tt { color: var(--dim); }
 .tl-items li.on .tt { color: #fff; }
-.gb { flex: 0 0 22px; height: 16px; background: #5a4420; border: 2px solid #1c1624; border-radius: 4px; box-shadow: inset 0 2px 0 #7a6030, inset 0 -3px 0 #3e2e14; transition: background .18s cubic-bezier(.34,1.56,.64,1), transform .18s cubic-bezier(.34,1.56,.64,1), box-shadow .18s; }
-.pxb.item:hover .gb { background: #8a6a28; }
-.tl-items li.on .gb { background: #c8963c; transform: translateY(2px); box-shadow: inset 0 2px 0 #f0c860, inset 0 -3px 0 #8a5a1c, 0 0 8px rgba(240,200,96,.45); }
+.gb { flex: 0 0 18px; height: 18px; background: #8c8f99; border: 2px solid #1c1624; border-radius: 50%; opacity: .55; box-shadow: inset 0 2px 0 #b4b7c0, inset 0 -3px 0 #5e616b; transition: background .18s cubic-bezier(.34,1.56,.64,1), transform .18s cubic-bezier(.34,1.56,.64,1), box-shadow .18s; }
+.pxb.item:hover .gb { opacity: .8; }
+.tl-items li.on .gb { background: #f0c860; opacity: 1; transform: none; box-shadow: inset 0 2px 0 #fff3b0, inset 0 -3px 0 #c8963c, 0 0 10px 2px rgba(240,200,96,.7); }
 .tl-sw { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px auto 0; max-width: 520px; }
 .tl-sw .pxb { padding: 8px 14px; font-size: 13px; background: #5a4420; box-shadow: inset 0 2px 0 #7a6030, inset 0 -3px 0 #3e2e14, 0 0 0 2px #1c1624; border-radius: 4px; }
 .tl-sw .pxb.on { background: #c8963c; box-shadow: inset 0 2px 0 #f0c860, inset 0 -3px 0 #8a5a1c, 0 0 0 2px #1c1624; color: #1e1418; transform: translateY(2px); }
@@ -48,3 +48,16 @@
 .tl-txt { font-size: 13px; color: var(--dim); flex-basis: 100%; }
 @media (max-width: 860px) { .tl-main { grid-template-columns: 1fr; } .tl-frame { border-width: 26px; border-image-width: 28px 14px 18px 14px; padding: 4px 4px 10px; } .tl-tab { font-size: 13px; padding: 9px 10px 7px; } }
 @media (prefers-reduced-motion: reduce) { .pxb, .tl-tab, .m-b { transition: none; } .m-b.lit { animation: none; } }
+
+.tl-tab .ti { display: none; width: 22px; height: 22px; vertical-align: middle; }
+.tl-tab .ti svg { width: 22px; height: 22px; display: block; }
+.tl-tab::before { content: none; }
+.tl-tab.on .ti { color: #c8443c; }
+@media (max-width: 760px) {
+  .tl-tab .tx { display: none; }
+  .tl-tab .ti { display: inline-block; }
+  .tl-tab { padding: 9px 4px 8px; }
+  .tl-tab small { font-size: 11px; margin-left: 2px; }
+  .tl-tabs { margin-left: 2px; }
+}
+@media (min-width: 761px) and (max-width: 1000px) { .tl-tab { font-size: 12px; padding: 10px 4px 8px; } .tl-tab small { display: none; } }

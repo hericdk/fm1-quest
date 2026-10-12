@@ -446,6 +446,18 @@
 <link rel="stylesheet" href="assets/tldr.css">
 <script src="assets/js/gsap.min.js"></script>
 <script src="assets/js/ScrollTrigger.min.js"></script>
+<script>
+/* videos play only while they are on screen (and the tab is visible): nothing else decodes in the background */
+(function () {
+  var vis = new Map(), io = "IntersectionObserver" in window ? new IntersectionObserver(function (es) {
+    es.forEach(function (e) { vis.set(e.target, e.isIntersecting); sync(e.target); });
+  }, { threshold: .2 }) : null;
+  function sync(v) { if (vis.get(v) && !document.hidden) { var p = v.play(); if (p && p.catch) p.catch(function () {}); } else v.pause(); }
+  window.__vidWatch = function (v) { if (!v || vis.has(v)) return; v.removeAttribute("autoplay"); v.autoplay = false; v.pause(); vis.set(v, false); if (io) io.observe(v); else sync(v); };
+  document.addEventListener("visibilitychange", function () { vis.forEach(function (_, v) { sync(v); }); });
+  document.querySelectorAll("video").forEach(function (v) { if (!v.closest("#simframe")) window.__vidWatch(v); });
+})();
+</script>
 <script src="assets/js/tldr.js" defer></script>
 <script type="module">
 /*LIB*/

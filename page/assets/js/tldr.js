@@ -135,27 +135,9 @@
       g.gain.setValueAtTime(.05, ctx.currentTime); g.gain.exponentialRampToValueAtTime(.0001, ctx.currentTime + .07); o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + .08); } catch (e) {}
   }
   /* ---- skeleton */
-  root.innerHTML = '<div class="tl-tabs" role="tablist"></div><div class="tl-frame"><div class="tl-main"><div class="tl-left"><ol class="tl-items"></ol></div><div class="tl-right"><div class="tl-lcd"><video muted loop playsinline autoplay></video><div class="tl-cap"></div></div><div class="tl-knobs"></div><div class="tl-how"></div></div></div></div>';
-  var tabs = root.querySelector(".tl-tabs"), list = root.querySelector(".tl-items"), vid = root.querySelector(".tl-lcd video"), cap = root.querySelector(".tl-cap"), how = root.querySelector(".tl-how"), kb = root.querySelector(".tl-knobs");
-  /* ---- the four knobs: they control the effects, so they stay. Each one changes the picture a little so there is something to test. */
-  var KN = [["K1", "#5a8ad0", "speed"], ["K2", "#7ab04e", "light"], ["K3", "#f0c860", "colour"], ["K4", "#e08a3a", "hue"]], kv = [50, 50, 50, 0];
-  function applyKnobs() {
-    vid.playbackRate = .4 + kv[0] / 100 * 1.6;
-    vid.style.filter = "brightness(" + (.5 + kv[1] / 100) + ") saturate(" + (.2 + kv[2] / 100 * 1.6) + ") hue-rotate(" + (kv[3] * 3.6) + "deg)";
-  }
-  KN.forEach(function (k, i) {
-    var w = el("div", "kn"), d = el("button", "kdial"); d.type = "button"; d.style.setProperty("--c", k[1]); d.setAttribute("aria-label", k[0] + " (" + k[2] + ")");
-    d.innerHTML = '<i></i>'; var out = el("span", "kval", "50");
-    function set(v) { kv[i] = Math.max(0, Math.min(100, v)); d.firstChild.style.transform = "translateX(-50%) rotate(" + (-135 + kv[i] * 2.7) + "deg)"; out.textContent = Math.round(kv[i]); applyKnobs(); }
-    set(kv[i]);
-    var y0 = null, x0 = 0, v0 = 0;
-    d.addEventListener("pointerdown", function (e) { y0 = e.clientY; x0 = e.clientX; v0 = kv[i]; d.setPointerCapture(e.pointerId); click(); });
-    d.addEventListener("pointermove", function (e) { if (y0 !== null) set(v0 + ((y0 - e.clientY) + (e.clientX - x0)) * .5); });
-    d.addEventListener("pointerup", function () { y0 = null; });
-    d.addEventListener("wheel", function (e) { e.preventDefault(); set(kv[i] + (e.deltaY < 0 ? 5 : -5)); }, { passive: false });
-    d.addEventListener("keydown", function (e) { if (e.key === "ArrowUp" || e.key === "ArrowRight") { set(kv[i] + 5); e.preventDefault(); } if (e.key === "ArrowDown" || e.key === "ArrowLeft") { set(kv[i] - 5); e.preventDefault(); } });
-    w.append(d, out); kb.append(w);
-  });
+  root.innerHTML = '<div class="tl-tabs" role="tablist"></div><div class="tl-frame"><div class="tl-main"><div class="tl-left"><ol class="tl-items"></ol></div><div class="tl-right"><div class="tl-lcd"><video muted loop playsinline autoplay></video><div class="tl-cap"></div></div><div class="tl-how"></div></div></div></div>';
+  var tabs = root.querySelector(".tl-tabs"), list = root.querySelector(".tl-items"), vid = root.querySelector(".tl-lcd video"), cap = root.querySelector(".tl-cap"), how = root.querySelector(".tl-how");
+  function applyKnobs() {}
   function tok(t) { return Array.isArray(t) ? t : [t]; }
   function allTokens(s) { var out = {}; s[2].forEach(function (t) { var a = tok(t); out[(a[0] === "hold" || a[0] === "turn" || a[0] === "menu" || a[0] === "site") ? a[1] : a[0]] = 1; }); return out; }
   function paintHow(s) {
@@ -173,7 +155,7 @@
   function media(name) { return B + "media/" + name + ".mp4"; }
   function show() {
     var it = C[cat][4][item], s = it[6][scr];
-    [vid].forEach(function (v) { if (v.dataset.n !== s[0]) { v.dataset.n = s[0]; v.src = media(s[0]); v.play().catch(function () {}); v.addEventListener("loadeddata", applyKnobs, { once: true }); } });
+    [vid].forEach(function (v) { if (v.dataset.n !== s[0]) { v.dataset.n = s[0]; v.src = media(s[0]); if (window.__vidWatch) window.__vidWatch(v); else v.play().catch(function () {}); } });
     cap.textContent = s[1] ? s[1] : ""; cap.hidden = !s[1];
     paintHow(s);
     list.querySelectorAll("li").forEach(function (li, i) { li.classList.toggle("on", i === item); });
@@ -193,8 +175,15 @@
     });
     show();
   }
+  var ICON = {
+    rpg: '<svg viewBox="0 0 24 24"><path d="M19 2h3v3l-9 9-3-3zM8 12l4 4-2 2-1 3-3-3 3-1 2-2-3-3z" fill="currentColor"/></svg>',
+    world: '<svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10h-6v-6H9v6H3z" fill="currentColor"/></svg>',
+    sound: '<svg viewBox="0 0 24 24"><path d="M9 3h10v13a3 3 0 1 1-2-2.8V7H11v11a3 3 0 1 1-2-2.8z" fill="currentColor"/></svg>',
+    games: '<svg viewBox="0 0 24 24"><path d="M3 8h18v9a3 3 0 0 1-3 3h-2l-2-3h-4l-2 3H6a3 3 0 0 1-3-3zm4 2v2H5v2h2v2h2v-2h2v-2H9v-2zm9 1.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z" fill="currentColor"/></svg>',
+    site: '<svg viewBox="0 0 24 24"><path d="M3 4h18v12H3zm2 2v8h14V6zM8 18h8v2H8z" fill="currentColor"/></svg>'
+  };
   C.forEach(function (c, i) {
-    var b = el("button", "tl-tab", c[1 + idx] + " <small>(" + c[4].length + ")</small>"); b.type = "button"; b.setAttribute("role", "tab");
+    var b = el("button", "tl-tab", '<span class="ti">' + (ICON[c[0]] || "") + '</span><span class="tx">' + c[1 + idx] + '</span> <small>(' + c[4].length + ')</small>'); b.type = "button"; b.setAttribute("role", "tab"); b.setAttribute("aria-label", c[1 + idx]); b.title = c[1 + idx];
     b.onclick = function () { click(); cat = i; item = 0; scr = 0; tabs.querySelectorAll(".tl-tab").forEach(function (x, k) { x.classList.toggle("on", k === i); x.setAttribute("aria-selected", k === i); }); build(); };
     tabs.append(b);
   });

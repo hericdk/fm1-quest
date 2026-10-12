@@ -168,6 +168,28 @@ S.noise = function (len, vol, hp, local) {
 S.tick = (hi) => { if (!S.ctx) return; const o = S.ctx.createOscillator(), g = S.ctx.createGain(), t = S.ctx.currentTime;
   o.type = 'square'; o.frequency.value = hi ? 1320 : 880; g.gain.setValueAtTime(.08, t); g.gain.exponentialRampToValueAtTime(.001, t + .06);
   o.connect(g); g.connect(S.rec); g.connect(S.spk); o.start(t); o.stop(t + .07); };
+/* banda do CPU: bateria techno, baixo "acid 303" e acordes "dub" (no espírito dos presets do FM1 Quest) */
+const outn = (n) => { n.connect(S.rec); n.connect(S.spk); };
+S.kick = (v) => { if (!S.ctx) return; const c = S.ctx, t = c.currentTime, o = c.createOscillator(), g = c.createGain();
+  o.frequency.setValueAtTime(160, t); o.frequency.exponentialRampToValueAtTime(42, t + .13); g.gain.setValueAtTime(.5 * (v || 1), t); g.gain.exponentialRampToValueAtTime(.001, t + .24);
+  o.connect(g); outn(g); o.start(t); o.stop(t + .26); };
+S.hat = (open, v) => { if (!S.ctx) return; const c = S.ctx, len = open ? .16 : .04, n = Math.floor(c.sampleRate * len), b = c.createBuffer(1, n, c.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n); const s = c.createBufferSource(); s.buffer = b;
+  const f = c.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 7000; const g = c.createGain(); g.gain.value = (open ? .11 : .07) * (v || 1);
+  s.connect(f); f.connect(g); outn(g); s.start(); };
+S.snare = () => { if (!S.ctx) return; const c = S.ctx, t = c.currentTime, n = Math.floor(c.sampleRate * .16), b = c.createBuffer(1, n, c.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 1.6); const s = c.createBufferSource(); s.buffer = b;
+  const f = c.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1900; const g = c.createGain(); g.gain.value = .3; s.connect(f); f.connect(g); outn(g); s.start(t);
+  const o = c.createOscillator(), og = c.createGain(); o.type = 'triangle'; o.frequency.setValueAtTime(220, t); o.frequency.exponentialRampToValueAtTime(140, t + .08); og.gain.setValueAtTime(.2, t); og.gain.exponentialRampToValueAtTime(.001, t + .12); o.connect(og); outn(og); o.start(t); o.stop(t + .14); };
+S.acid = (freq, accent, dur) => { if (!S.ctx) return; const c = S.ctx, t = c.currentTime, o = c.createOscillator(), f = c.createBiquadFilter(), g = c.createGain();
+  o.type = 'sawtooth'; o.frequency.value = freq; f.type = 'lowpass'; f.Q.value = 13;
+  f.frequency.setValueAtTime(accent ? 2600 : 1100, t); f.frequency.exponentialRampToValueAtTime(230, t + (dur || .2));
+  g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(accent ? .22 : .15, t + .006); g.gain.exponentialRampToValueAtTime(.001, t + (dur || .2) + .05);
+  o.connect(f); f.connect(g); outn(g); o.start(t); o.stop(t + (dur || .2) + .08); };
+S.stab = (root, ints) => { if (!S.ctx) return; const c = S.ctx, t = c.currentTime, g = c.createGain(), f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 1700; f.Q.value = 2;
+  g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(.11, t + .01); g.gain.exponentialRampToValueAtTime(.001, t + .34);
+  (ints || [0, 3, 7]).forEach((k, i) => { [0, 4].forEach((det) => { const o = c.createOscillator(); o.type = 'square'; o.frequency.value = root * Math.pow(2, k / 12) * (1 + det * .0007); o.connect(f); o.start(t); o.stop(t + .38); }); });
+  f.connect(g); outn(g); };
 S.hit = (big) => S.noise(big ? .35 : .12, big ? .5 : .25, big ? 200 : 900);
 
 /* ---------- ranking: começa em zero; só conta quem entra numa luta Player vs Player com um FM1 conectado ---------- */
@@ -208,7 +230,7 @@ A.rank = {
     p.counted[fw] = now; try { localStorage.setItem(PERSON, JSON.stringify(p)); } catch (e) {}
     const d = A.rank.data(); d.conns[kind] = (d.conns[kind] || 0) + 1;
     const vk = kind + ' ' + (ver || 'original'); d.ver[vk] = (d.ver[vk] || 0) + 1; A.rank.save();
-    A.rank.post('/rank/hit', { id: await sha('fm1arena|' + A.net.id), fw: kind, ver: ver || 'original' });
+    A.rank.post('/rank/hit', { id: await sha('fm1arena|' + A.net.person), fw: kind, ver: ver || 'original' });
     A.emit('rank'); return kind;
   },
   win(fw) { const d = A.rank.data(); d.wins[fw] = (d.wins[fw] || 0) + 1; A.rank.save(); A.rank.post('/rank/win', { fw }); A.emit('rank'); },
@@ -231,7 +253,7 @@ A.track = function (name, p) {
 const pid = (() => { try { const st = A.dev ? sessionStorage : localStorage; let v = st.getItem('arena.pid'); if (!v) { v = Math.random().toString(36).slice(2, 9); st.setItem('arena.pid', v); } return v; } catch (e) { return Math.random().toString(36).slice(2, 9); } })();
 A.ICE = [{ urls: 'stun:stun.l.google.com:19302' } /* , { urls: 'turn:SEU-TURN:3478', username: '...', credential: '...' } */];   // WebRTC: STUN do Google (grátis); TURN é opcional e precisa de um servidor próprio
 const ROOM_TTL = 30000;                                           // a sala some 30 s depois que o dono some (sem avisar)
-const N = A.net = { id: pid, ch: null, tx: null, rooms: {}, room: null, peers: {}, peerOf: {}, pidOf: {}, mode: '', audio: null };
+const N = A.net = { id: Math.random().toString(36).slice(2, 9), person: pid, ch: null, tx: null, rooms: {}, room: null, peers: {}, peerOf: {}, pidOf: {}, mode: '', audio: null };
 let p2pRoom = null, p2pAct = null, started = false;
 const FW_APP = 'fm1quest-arena-v021';          // todos os jogadores da arena se encontram neste "salão" (P2P)
 N.start = function () {
@@ -294,7 +316,7 @@ function handle(m) {
   else if (m.t === 'gone') { delete N.rooms[m.room]; A.emit('rooms'); }
   else if (m.t === 'join' && N.room && N.room.host === N.id && N.room.id === m.room) {
     if (N.room.players.length >= N.room.size || N.room.phase !== 'wait') { N.send({ t: 'full', room: m.room }, m.from); return; }
-    N.room.players.push({ id: m.from, fw: m.fw }); N.send({ t: 'room', room: pub(N.room) }); A.emit('roomupdate', N.room);
+    N.room.players.push({ id: m.from, person: m.person, fw: m.fw }); N.send({ t: 'room', room: pub(N.room) }); A.emit('roomupdate', N.room);
   }
   else if (m.t === 'leave' && N.room && N.room.host === N.id) {
     if (N.room.phase === 'wait') { N.room.players = N.room.players.filter(p => p.id !== m.from); A.emit('roomupdate', N.room); N.send({ t: 'room', room: pub(N.room) }); }
@@ -306,12 +328,12 @@ function handle(m) {
 }
 N.create = function (size, name) {
   N.start();
-  N.room = { id: 'r' + Math.random().toString(36).slice(2, 7), name: name || 'Sala ' + (1 + A.rnd(99)), size, arena: '96', host: N.id, phase: 'wait', players: [{ id: N.id, fw: A.myFw() }] };
+  N.room = { id: 'r' + Math.random().toString(36).slice(2, 7), name: name || 'Sala ' + (1 + A.rnd(99)), size, arena: '96', host: N.id, phase: 'wait', players: [{ id: N.id, person: N.person, fw: A.myFw() }] };
   N.send({ t: 'room', room: pub(N.room) }); return N.room;
 };
 N.join = function (r) {
   N.start(); N.room = Object.assign({}, r, { players: r.players.slice() });
-  N.send({ t: 'join', room: r.id, fw: A.myFw() }, r.host);
+  N.send({ t: 'join', room: r.id, fw: A.myFw(), person: N.person }, r.host);
 };
 N.leave = function (soft) {
   if (!N.room) return;

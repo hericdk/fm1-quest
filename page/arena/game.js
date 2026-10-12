@@ -144,7 +144,7 @@ class Game {
     this.onEv(ev); A.net.ch && this.mode === 'pvp' && A.net.send({ t: 'ev', e: ev });
     if (s.hp[en] <= 0) this.phase('end', 0);
   }
-  judge(side, ci, n, v, tm) {
+  judge(side, ci, n, v, tm, scale) {
     const s = this.s, beat = 60000 / s.bpm, g = beat / 2;
     const ph = (((tm - this.turnT0) % g) + g) % g, e = Math.min(ph, g - ph);
     const q = e <= 35 ? 'perfect' : e <= 70 ? 'good' : e <= 110 ? 'ok' : 'off';
@@ -160,7 +160,7 @@ class Game {
     const str = v < 60 ? 0 : v < 100 ? 1 : 2, kind = ((this.seq++ + n) % 2) * 3 + str;
     const K = this.kinds[side]; K.push({ k: kind, t: tm }); while (K.length && tm - K[0].t > 1600) K.shift();
     const combo = new Set(K.map(x => x.k)).size >= 3 && K.length >= 3;
-    let dmg = BASE * mq * vr * harm * intv * loop * (.8 + v / 127 * .4) * (combo ? 1.25 : 1);
+    let dmg = BASE * mq * vr * harm * intv * loop * (.8 + v / 127 * .4) * (combo ? 1.25 : 1) * (scale || 1);
     const ult = false;
     const en = 1 - side; s.hp[en] = Math.max(0, +(s.hp[en] - dmg).toFixed(2));
     s.ult[en] = Math.min(100, s.ult[en] + dmg * 2.2);
@@ -200,7 +200,7 @@ class Game {
     if (el >= this.phD) {
       if (s.ph === 'dice') { s.side = s.first; this.phase('prep', 10); this.layoutIdle(); }
       else if (s.ph === 'prep') { s.turn = 0; s.side = s.first; this.phase('count', beat * 4); this.ticked = -1; }
-      else if (s.ph === 'count') { this.turnT0 = now; this.ticked = -1; this.phase('turn', 25); this.cpuT = now; }
+      else if (s.ph === 'count') { this.turnT0 = now; this.ticked = -1; this.phase('turn', 25); this.cpuT = now; this.cpuK = -1; }
       else if (s.ph === 'turn') {
         s.turn++; if (s.turn >= 4) { this.phase('end', 0); }
         else { s.side = s.first ^ (s.turn & 1); this.phase('count', beat * 4); this.ticked = -1; this.retreat(1 - s.side); }
@@ -222,13 +222,28 @@ class Game {
     if (s.ph === 'end' && !this.ended) { this.ended = true; this.o.onEnd && this.o.onEnd(this.s); }
     if (this.mode === 'pvp' && now - (this.lastSend || 0) > 110) { this.lastSend = now; A.net.send({ t: 'st', s: this.s }); }
   }
+  /* CPU: toca uma pequena banda (kick/caixa/chimbal techno, baixo acid, acordes dub) e ataca em parte das notas.
+     Fica mais fraca depois de tirar 35% da vida do jogador. O CPU de quem saiu luta, mas em silêncio. */
   cpuPlay(now, side, cps) {
-    const beat = 60000 / this.s.bpm, g = beat / 2;
-    if (now - this.cpuT < g) return; this.cpuT += g; if (Math.random() < .28) return;
-    const p = cps[A.rnd(cps.length)], scale = [60, 62, 64, 65, 67, 69, 71, 72], n = scale[A.rnd(scale.length)], v = 55 + A.rnd(70);
-    const jit = (Math.random() - .5) * (this.o.cpuSloppy || 90);
-    if (!p.gone) A.synth.note(n, v, 1, false);               // jogador que saiu: o CPU luta, mas o som dele não é mais gravado
-    this.judge(side, p.chars[A.rnd(p.chars.length)], n, v, now + jit);
+    const s = this.s, step = 60000 / s.bpm / 4, k = Math.floor((now - this.turnT0) / step);
+    if (k === this.cpuK || k < 0) return; this.cpuK = k;
+    const bar = Math.floor(k / 16), st = k % 16, loud = !cps.every(p => p.gone);
+    const ROOT = [110, 110, 98, 82.4][bar % 4];                                   // A, A, G, E: o baixo anda a cada compasso
+    const ACID = [0, null, 3, null, 7, null, 3, 5, 0, null, 10, null, 7, null, 3, null];
+    const eased = s.hp[1 - side] <= 65;                                           // já tirou 35% da vida do inimigo: alivia ainda mais
+    const prob = eased ? .28 : .6, jit = eased ? 130 : 80;
+    if (loud) {
+      if (st % 4 === 0) A.synth.kick(1);
+      if (st === 4 || st === 12) A.synth.snare();
+      if (st % 2 === 0) A.synth.hat(st % 4 === 2, 1); else if (Math.random() < .5) A.synth.hat(false, .5);
+      if (ACID[st] != null) A.synth.acid(ROOT * Math.pow(2, ACID[st] / 12), st % 8 === 0 || st === 10, .17);
+      if (st === 3 || st === 10) A.synth.stab(ROOT * 2, bar % 2 ? [0, 3, 7] : [0, 3, 10]);
+    }
+    // ataques: nas notas do baixo e nos acordes (pouca chance; o jogador é quem manda na luta)
+    if ((ACID[st] != null || st === 3 || st === 10) && Math.random() < prob) {
+      const p = cps[A.rnd(cps.length)], n = 45 + (ACID[st] || 0), v = 50 + A.rnd(45);
+      this.judge(side, p.chars[A.rnd(p.chars.length)], n, v, now + (Math.random() - .5) * jit, .9);
+    }
   }
   markGone(pid) {              // o jogador saiu no meio da luta: um CPU assume os personagens dele
     const p = this.players.find(x => x.id === pid); if (!p || p.cpu) return;

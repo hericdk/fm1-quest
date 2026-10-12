@@ -104,3 +104,5 @@ input[type=text]{background:#000;color:var(--txt);border:0;padding:9px 11px;font
   box-shadow:calc(var(--px)*-1) 0 0 0 var(--bc),var(--px) 0 0 0 var(--bc),0 calc(var(--px)*-1) 0 0 var(--bc),0 var(--px) 0 0 var(--bc),var(--px) var(--px) 0 var(--px) #000}
 .btn.flag:hover{color:#fff7d6;background-color:#a8281c}
 @keyframes flagwave{from{background-position:0 0,0 0}to{background-position:56px 0,0 12px}}
+
+#aust{white-space:pre-line}

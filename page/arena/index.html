@@ -1,6 +1,6 @@
 <!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>FM1 Arena</title><meta name="robots" content="noindex"><link rel="stylesheet" href="arena.css"></head>
-<body><div id="bg"><video id="bgv" autoplay muted loop playsinline preload="auto" poster="img/arena-bg.webp"><source src="video/arena-bg.webm" type="video/webm"></video></div>
+<body><div id="bg"><video id="bgv" disablepictureinpicture autoplay muted loop playsinline preload="auto" poster="img/arena-bg.webp"><source src="video/arena-bg.webm" type="video/webm"></video></div>
 <nav id="top" aria-label="Firmwares"></nav>
 <main id="app">
 <section class="scr" data-screen="menu">
@@ -23,7 +23,6 @@
   <div id="rkbody"></div>
   <p class="help" id="rkdemo"></p>
 </div>
-<p class="credits" data-i="credits"></p>
 <p class="lgpd" data-i="lgpd"></p>
 </section><section class="scr" data-screen="lobby">
 <h1 class="t" data-i="lb_h"></h1>
@@ -32,7 +31,6 @@
 <div class="row split"><button class="btn" id="back" data-i="lb_back"></button><button class="btn gold" id="create" data-i="lb_create"></button><button class="btn gold" id="quick" data-i="lb_join"></button></div>
 <div class="rooms" id="rooms"></div>
 <div id="mine" class="card" hidden></div>
-<p class="credits" data-i="credits"></p>
 </section><section class="scr" data-screen="play">
 <div id="box">
   <div id="hud">

@@ -70,7 +70,7 @@ A.screens.menu = function () {
     A.synth.init(); $('#cerr').textContent = '';
     try {
       await A.connect(); A.track('arena_connect', { fw: A.midi.fw }); refresh();
-      const ok = await A.captureFM1Audio(); const st = $('#aust'); if (st) { st.hidden = false; st.textContent = A.t(ok ? 'au_ok' : 'au_no') + '  ·  ' + A.t('fw_is') + ' ' + (A.FW[A.midi.fw] || {}).name + (A.midi.info ? ' (' + A.midi.info + ')' : ' (' + A.midi.port + ')'); }
+      const ok = await A.captureFM1Audio(); const st = $('#aust'); if (st) { st.hidden = false; const known = A.midi.fw && A.midi.fw !== 'other'; st.textContent = A.t(ok ? 'au_ok' : 'au_no') + '\n' + A.t('fw_is') + ' ' + ((A.FW[A.midi.fw] || {}).name || '') + (known ? '' : ' (' + (A.midi.info || A.midi.port) + ')'); }
     }
     catch (e) { $('#cerr').textContent = e.message; }
   };
@@ -90,8 +90,8 @@ function tryRejoin() {        // saiu no meio de uma luta e reabriu a aba: o CPU
   if (!last || Date.now() - last.ts > 120000 || (A.net.room && A.net.room.id === last.room) || A.rejoining) return;
   A.rejoining = true; A.net.start();
   const un = A.on('net:resume', (m) => { un(); A.rejoining = false; A.net.room = Object.assign({}, m.room); A.resume = m; A.sel.mode = 'pvp'; go('play'); });
-  let tries = 0; const iv = setInterval(() => { A.net.send({ t: 'rejoin', room: last.room }, last.host); if (++tries > 12 || !A.rejoining) { clearInterval(iv); un(); A.rejoining = false; } }, 2000);   // (o P2P leva alguns segundos para achar o dono)
-  A.net.send({ t: 'rejoin', room: last.room }, last.host);
+  let tries = 0; const iv = setInterval(() => { A.net.send({ t: 'rejoin', room: last.room, person: A.net.person }, last.host); if (++tries > 12 || !A.rejoining) { clearInterval(iv); un(); A.rejoining = false; } }, 2000);   // (o P2P leva alguns segundos para achar o dono)
+  A.net.send({ t: 'rejoin', room: last.room, person: A.net.person }, last.host);
 }
 function showRank() {
   const box = $('#rankbox'); box.hidden = false; let kind = 'conns';
@@ -150,16 +150,25 @@ A.screens.lobby = function () {
   };
   $('#quick').onclick = () => {
     const open = A.net.open(size())[0]; A.track('arena_quick', { size: size(), found: !!open });
-    if (open) { A.net.join(open); setTimeout(() => go('play'), 250); }
-    else { const h = $('#rooms'); h.insertAdjacentHTML('afterbegin', '<p class="help" id="nofree">' + A.t('lb_nofree') + '</p>'); setTimeout(() => { const n = $('#nofree'); n && n.remove(); }, 3500); }
+    if (open) tryJoin(open);
+    else flash(A.t('lb_nofree'));
   };
+  const flash = (txt) => { const h = $('#rooms'); h.insertAdjacentHTML('afterbegin', '<p class="help" id="nofree">' + txt + '</p>'); setTimeout(() => { const n = $('#nofree'); n && n.remove(); }, 3500); };
+  function tryJoin(r) {          // entra só depois que o dono confirma (a sala pode ter enchido ou sumido)
+    A.net.join(r); A.track('arena_join', { room: r.id });
+    let done = false; const fail = () => { if (done) return; done = true; clean(); A.net.room = null; flash(A.t('lb_full')); };
+    const u1 = A.on('rooms', () => { const rr = A.net.rooms[r.id]; if (!done && rr && rr.players.some(p => p.id === A.net.id)) { done = true; clean(); go('play'); } });
+    const u2 = A.on('full', fail), to = setTimeout(fail, 6000);
+    function clean() { u1(); u2(); clearTimeout(to); }
+  }
   const draw = () => {
-    const rs = Object.values(A.net.rooms).filter(r => r.size === size());
+    const own = A.net.room && A.net.room.host === A.net.id && A.net.room.size === size() ? [A.net.room] : [];
+    const rs = own.concat(Object.values(A.net.rooms).filter(r => r.size === size() && r.id !== (own[0] && own[0].id)));
     $('#rooms').innerHTML = rs.length ? rs.map(r => `<div class="room"><div><b>${esc(r.name)}</b> <span class="pill">${r.size === 2 ? '1×1' : '2×2'}</span> <span class="pill">${esc((A.stages && A.stages[r.arena] && A.stages[r.arena].name) || '')}</span></div>
       <div class="pl">${r.players.map(p => A.fwLogo(p.fw, 18)).join('')}<span class="pill">${r.players.length}/${r.size}</span></div>
-      <button class="btn gold" data-j="${r.id}" ${r.players.length >= r.size || r.phase !== 'wait' ? 'disabled' : ''}>${A.t(r.phase !== 'wait' ? 'lb_fight' : 'lb_enter')}</button></div>`).join('')
+      ${r.host === A.net.id ? `<span class="pill">${A.t('lb_you')}</span>` : `<button class="btn gold" data-j="${r.id}" ${r.players.length >= r.size || r.phase !== 'wait' ? 'disabled' : ''}>${A.t(r.phase !== 'wait' ? 'lb_fight' : 'lb_enter')}</button>`}</div>`).join('')
       : '<p class="help">' + A.t('lb_none') + '</p>';
-    $$('#rooms [data-j]').forEach(b => b.onclick = () => { const r = A.net.rooms[b.dataset.j]; if (!r) return; A.net.join(r); A.track('arena_join', { room: r.id }); setTimeout(() => go('play'), 250); });
+    $$('#rooms [data-j]').forEach(b => b.onclick = () => { const r = A.net.rooms[b.dataset.j]; if (!r) return; tryJoin(r); });
   };
   const drawMine = async () => {
     const m = $('#mine'), r = A.net.room;
@@ -188,6 +197,7 @@ A.screens.play = async function () {
   if (!A.stages) A.stages = await (await fetch('stages.json')).json();
   if (A.dev) devPanel();
   $('#hud').style.display = mode === 'train' ? 'none' : '';
+  const forget = () => { try { localStorage.removeItem('arena.last'); } catch (e) {} };
   const back = () => { forget(); A.net.leave(); if (game) game.destroy(); if (train) train.destroy(); game = train = null; go(mode === 'pvp' ? 'lobby' : 'menu'); };
   const mkBtn = (txt, fn, gold) => { const b = document.createElement('button'); b.className = 'btn' + (gold ? ' gold' : ''); b.textContent = txt; b.onclick = fn; ctl.append(b); return b; };
   ctl.innerHTML = '';
@@ -211,13 +221,12 @@ A.screens.play = async function () {
   } else {
     if (!room) return go('lobby');
     size = room.size; stageId = room.arena; hostFlag = room.host === A.net.id;
-    players = room.players.map((p, i) => ({ id: p.id, fw: p.fw, side: i % 2, chars: size === 4 ? (i < 2 ? [0, 1] : [2, 3]) : [0, 1] }));
+    players = room.players.map((p, i) => ({ id: p.id, person: p.person, fw: p.fw, side: i % 2, chars: size === 4 ? (i < 2 ? [0, 1] : [2, 3]) : [0, 1] }));
   }
   const mp = players.find(p => p.id === A.net.id) || players[0];
   const fwSides = [(players.find(p => p.side === 0) || {}).fw || 'other', (players.find(p => p.side === 1) || {}).fw || 'other'];
   let acc = new Set(); let started = !!resume;
   const remember = () => { if (mode === 'pvp' && A.net.room) { try { localStorage.setItem('arena.last', JSON.stringify({ room: A.net.room.id, host: A.net.room.host, ts: Date.now() })); } catch (e) {} } };
-  const forget = () => { try { localStorage.removeItem('arena.last'); } catch (e) {} };
   const names = [A.t('side_a'), A.t('side_b')];
   $('#wa').innerHTML = A.fwLogo(fwSides[0], 18) + `<span>${names[0]}</span>`;
   $('#wb').innerHTML = A.fwLogo(fwSides[1], 18) + `<span>${names[1]}</span>`;
@@ -269,6 +278,16 @@ A.screens.play = async function () {
       rec.ondataavailable = (e) => e.data.size && chunks.push(e.data); rec.start(500);
     } catch (e) { recErr = e.message; }
   }
+  /* a gravação final só leva os turnos de tocar (e o sorteio e o fim): corta a preparação e a espera de cada lado, com o som fazendo fade na saída e na volta */
+  function gateRec(ph) {
+    if (!rec || rec.state === 'inactive' || !A.synth.ctx) return;
+    const want = ph === 'turn' || ph === 'dice' || ph === 'end', gn = A.synth.rec.gain, t = A.synth.ctx.currentTime;
+    if (want && rec.state === 'paused') { try { rec.resume(); } catch (e) {} gn.cancelScheduledValues(t); gn.setValueAtTime(Math.max(0.0001, gn.value), t); gn.linearRampToValueAtTime(.6, t + .35); }
+    else if (!want && rec.state === 'recording' && !gateRec.pending) {
+      gn.cancelScheduledValues(t); gn.setValueAtTime(gn.value, t); gn.linearRampToValueAtTime(0, t + .35);
+      gateRec.pending = setTimeout(() => { gateRec.pending = 0; if (rec && rec.state === 'recording' && !(g.s.ph === 'turn' || g.s.ph === 'dice' || g.s.ph === 'end')) { try { rec.pause(); } catch (e) {} } }, 380);
+    }
+  }
   g.rec = startRec;
   help.innerHTML = A.t('pl_help', { c: mp.chars.length === 2 ? A.t('pl_c2') : '1-4' });
 
@@ -279,7 +298,7 @@ A.screens.play = async function () {
     if (mode === 'cpu') { mkBtn(A.t('pl_call'), () => { g.start(); drawControls(); }, true); return; }
     if (!hostFlag) { const p = document.createElement('span'); p.className = 'help'; p.textContent = A.t('pl_wh'); ctl.append(p); return; }
     const full = A.net.room.players.length >= size;
-    const b = mkBtn(full ? A.t('pl_call') : A.t('pl_wp', { a: A.net.room.players.length, b: size }), () => { A.net.room.phase = 'call'; acc = new Set([A.net.id]); A.net.send({ t: 'call', players: A.net.room.players.map((p, i) => ({ id: p.id, fw: p.fw, side: i % 2, chars: size === 4 ? (i < 2 ? [0, 1] : [2, 3]) : [0, 1] })) }); A.track('arena_call'); checkAcc(); showWait(); }, true);
+    const b = mkBtn(full ? A.t('pl_call') : A.t('pl_wp', { a: A.net.room.players.length, b: size }), () => { A.net.room.phase = 'call'; acc = new Set([A.net.id]); A.net.send({ t: 'call', players: A.net.room.players.map((p, i) => ({ id: p.id, person: p.person, fw: p.fw, side: i % 2, chars: size === 4 ? (i < 2 ? [0, 1] : [2, 3]) : [0, 1] })) }); A.track('arena_call'); checkAcc(); showWait(); }, true);
     b.disabled = !full;
     if (!arenaPick.children.length || true) { stageThumbs(arenaPick, g.stage ? g.stage._id : stageId, (id) => { A.net.room.arena = id; g.loadStage(id); g.layoutIdle(true); }); ctl.append(arenaPick); }
   }
@@ -294,7 +313,9 @@ A.screens.play = async function () {
     A.on('net:acc', (m) => { if (hostFlag) { acc.add(m.from); checkAcc(); } });
     A.on('net:gone', (m) => { if (hostFlag && game === g && g.s.ph !== 'wait' && g.s.ph !== 'end') g.markGone(m.from); });
     A.on('net:rejoin', (m) => {
-      if (!hostFlag || game !== g || !A.net.room || m.room !== A.net.room.id || !g.players.find(p => p.id === m.from)) return;
+      const pl = hostFlag && game === g && A.net.room && m.room === A.net.room.id && g.players.find(p => p.person && p.person === m.person);
+      if (!pl) return;
+      const old = pl.id; pl.id = m.from; (A.net.room.players.find(p => p.id === old) || {}).id = m.from;       // a pessoa voltou numa aba nova: troca o id de rede
       g.markBack(m.from); const r = A.net.room;
       A.net.send({ t: 'resume', room: { id: r.id, name: r.name, size: r.size, arena: r.arena, host: r.host, phase: r.phase, players: r.players },
         players: g.players.map(p => ({ id: p.id, fw: p.fw, side: p.side, chars: p.chars, cpu: p.cpu, gone: p.gone })), s: g.s }, m.from);
@@ -342,7 +363,7 @@ A.screens.play = async function () {
     const finishDelete = () => { chunks = []; };
   }
   function hud(gm) {
-    drawRec(gm); const s = gm.s;
+    drawRec(gm); const s = gm.s; gateRec(s.ph);
     if (mode === 'pvp') {
       const nw = performance.now();
       if (!gm._rem || nw - gm._rem > 4000) { gm._rem = nw; if (s.ph !== 'end') remember(); }

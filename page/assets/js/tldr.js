@@ -135,7 +135,7 @@
       g.gain.setValueAtTime(.05, ctx.currentTime); g.gain.exponentialRampToValueAtTime(.0001, ctx.currentTime + .07); o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + .08); } catch (e) {}
   }
   /* ---- skeleton */
-  root.innerHTML = '<div class="tl-tabs" role="tablist"></div><div class="tl-frame"><div class="tl-main"><div class="tl-left"><ol class="tl-items"></ol></div><div class="tl-right"><div class="tl-lcd"><video muted loop playsinline autoplay></video><div class="tl-cap"></div></div><div class="tl-how"></div></div></div></div>';
+  root.innerHTML = '<div class="tl-tabs" role="tablist"></div><div class="tl-frame"><div class="tl-main"><div class="tl-left"><ol class="tl-items"></ol></div><div class="tl-right"><div class="tl-lcd"><video muted loop playsinline autoplay disablepictureinpicture controlslist="nopictureinpicture"></video><div class="tl-cap"></div></div><div class="tl-how"></div></div></div></div>';
   var tabs = root.querySelector(".tl-tabs"), list = root.querySelector(".tl-items"), vid = root.querySelector(".tl-lcd video"), cap = root.querySelector(".tl-cap"), how = root.querySelector(".tl-how");
   function applyKnobs() {}
   function tok(t) { return Array.isArray(t) ? t : [t]; }

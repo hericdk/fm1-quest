@@ -45,7 +45,7 @@
     const box = S.api.lcdbox, cv = document.createElement('canvas'); cv.width = cv.height = 240;
     cv.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;z-index:9999;background:#000;cursor:pointer';
     box.style.position = box.style.position || 'relative';
-    const vid = document.createElement('video');                                   // the demo loop: what the firmware does today; it goes away at the first click
+    const vid = document.createElement('video'); vid.disablePictureInPicture = true; vid.setAttribute('controlslist', 'nopictureinpicture');                                   // the demo loop: what the firmware does today; it goes away at the first click
     // the preview on the glass: village, the party against the new monsters, the goblin boss with an ult in its window, ONE hero's ult fullscreen
     // (the mage first; the other two are drawn at random, never repeated), the visualizer, the FX pages being edited; then it starts again with the same order
     const PL = ['village', 'map', 'boss_goblin', 'ULT', 'viz_sky', 'fx_pedals', 'slicer_towers'];

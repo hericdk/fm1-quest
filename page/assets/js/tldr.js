@@ -135,21 +135,27 @@
       g.gain.setValueAtTime(.05, ctx.currentTime); g.gain.exponentialRampToValueAtTime(.0001, ctx.currentTime + .07); o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime + .08); } catch (e) {}
   }
   /* ---- skeleton */
-  root.innerHTML = '<div class="tl-tabs" role="tablist"></div><div class="tl-frame"><div class="tl-main"><div class="tl-left"><ol class="tl-items"></ol><div class="tl-fm1" aria-hidden="false"></div></div><div class="tl-right"><div class="tl-lcd"><video muted loop playsinline autoplay></video><div class="tl-cap"></div></div><div class="tl-how"></div></div></div></div>';
-  var tabs = root.querySelector(".tl-tabs"), list = root.querySelector(".tl-items"), fm = root.querySelector(".tl-fm1"), vid = root.querySelector(".tl-lcd video"), cap = root.querySelector(".tl-cap"), how = root.querySelector(".tl-how");
-  /* ---- the single 2D mini FM-1 */
-  var BTN = ["FX", "SCL", "ENV", "LFO", "EDIT", "GLO", "HOME", "SAVE", "ARP", "SEQ", "PLAY", "REC"];
-  var h = '<div class="m-top"><div class="m-knobs">';
-  ["MASTER", "SELECT", "PRESETS", "ALGORITHM"].forEach(function (k) { h += '<i class="m-k" data-b="' + k + '" title="' + k + '"></i>'; });
-  h += '</div><div class="m-lcd"><video muted loop playsinline autoplay></video></div><div class="m-knobs">';
-  ["K1", "K2", "K3", "K4"].forEach(function (k) { h += '<i class="m-k" data-b="' + k + '"></i>'; });
-  h += '</div></div><div class="m-btns">';
-  BTN.forEach(function (b) { h += '<button type="button" class="m-b" data-b="' + b + '">' + b + '</button>'; });
-  h += '<button type="button" class="m-b m-o" data-b="OCT−">OCT−</button><button type="button" class="m-b m-o" data-b="OCT+">OCT+</button></div><div class="m-keys" data-b="KEYS">';
-  for (var i = 0; i < 16; i++) h += '<i class="m-w"></i>';
-  h += '</div>';
-  fm.innerHTML = h;
-  var mvid = fm.querySelector(".m-lcd video");
+  root.innerHTML = '<div class="tl-tabs" role="tablist"></div><div class="tl-frame"><div class="tl-main"><div class="tl-left"><ol class="tl-items"></ol></div><div class="tl-right"><div class="tl-lcd"><video muted loop playsinline autoplay></video><div class="tl-cap"></div></div><div class="tl-knobs"></div><div class="tl-how"></div></div></div></div>';
+  var tabs = root.querySelector(".tl-tabs"), list = root.querySelector(".tl-items"), vid = root.querySelector(".tl-lcd video"), cap = root.querySelector(".tl-cap"), how = root.querySelector(".tl-how"), kb = root.querySelector(".tl-knobs");
+  /* ---- the four knobs: they control the effects, so they stay. Each one changes the picture a little so there is something to test. */
+  var KN = [["K1", "#5a8ad0", "speed"], ["K2", "#7ab04e", "light"], ["K3", "#f0c860", "colour"], ["K4", "#e08a3a", "hue"]], kv = [50, 50, 50, 0];
+  function applyKnobs() {
+    vid.playbackRate = .4 + kv[0] / 100 * 1.6;
+    vid.style.filter = "brightness(" + (.5 + kv[1] / 100) + ") saturate(" + (.2 + kv[2] / 100 * 1.6) + ") hue-rotate(" + (kv[3] * 3.6) + "deg)";
+  }
+  KN.forEach(function (k, i) {
+    var w = el("div", "kn"), d = el("button", "kdial"); d.type = "button"; d.style.setProperty("--c", k[1]); d.setAttribute("aria-label", k[0] + " (" + k[2] + ")");
+    d.innerHTML = '<i></i>'; var out = el("span", "kval", "50");
+    function set(v) { kv[i] = Math.max(0, Math.min(100, v)); d.firstChild.style.transform = "translateX(-50%) rotate(" + (-135 + kv[i] * 2.7) + "deg)"; out.textContent = Math.round(kv[i]); applyKnobs(); }
+    set(kv[i]);
+    var y0 = null, x0 = 0, v0 = 0;
+    d.addEventListener("pointerdown", function (e) { y0 = e.clientY; x0 = e.clientX; v0 = kv[i]; d.setPointerCapture(e.pointerId); click(); });
+    d.addEventListener("pointermove", function (e) { if (y0 !== null) set(v0 + ((y0 - e.clientY) + (e.clientX - x0)) * .5); });
+    d.addEventListener("pointerup", function () { y0 = null; });
+    d.addEventListener("wheel", function (e) { e.preventDefault(); set(kv[i] + (e.deltaY < 0 ? 5 : -5)); }, { passive: false });
+    d.addEventListener("keydown", function (e) { if (e.key === "ArrowUp" || e.key === "ArrowRight") { set(kv[i] + 5); e.preventDefault(); } if (e.key === "ArrowDown" || e.key === "ArrowLeft") { set(kv[i] - 5); e.preventDefault(); } });
+    w.append(d, out); kb.append(w);
+  });
   function tok(t) { return Array.isArray(t) ? t : [t]; }
   function allTokens(s) { var out = {}; s[2].forEach(function (t) { var a = tok(t); out[(a[0] === "hold" || a[0] === "turn" || a[0] === "menu" || a[0] === "site") ? a[1] : a[0]] = 1; }); return out; }
   function paintHow(s) {
@@ -163,13 +169,11 @@
       box.append(c);
       if (a.length > 1 && typeof a[1] === "number") { box.append(el("span", "plus", "+")); box.append(el("span", "chip num", "<b>" + a[1] + "</b>")); box.append(el("span", "tl-txt", T.times[L] + " " + a[0])); }
     });
-    var on = allTokens(s);
-    fm.querySelectorAll("[data-b]").forEach(function (b) { b.classList.toggle("lit", !!on[b.dataset.b]); });
   }
   function media(name) { return B + "media/" + name + ".mp4"; }
   function show() {
     var it = C[cat][4][item], s = it[6][scr];
-    [vid, mvid].forEach(function (v) { if (v.dataset.n !== s[0]) { v.dataset.n = s[0]; v.src = media(s[0]); v.play().catch(function () {}); } });
+    [vid].forEach(function (v) { if (v.dataset.n !== s[0]) { v.dataset.n = s[0]; v.src = media(s[0]); v.play().catch(function () {}); v.addEventListener("loadeddata", applyKnobs, { once: true }); } });
     cap.textContent = s[1] ? s[1] : ""; cap.hidden = !s[1];
     paintHow(s);
     list.querySelectorAll("li").forEach(function (li, i) { li.classList.toggle("on", i === item); });
@@ -183,7 +187,7 @@
   function build() {
     list.innerHTML = "";
     C[cat][4].forEach(function (it, i) {
-      var li = el("li"), b = el("button", "pxb item", '<span class="n">' + (i + 1) + '</span><span class="tt">' + it[idx] + '</span><span class="ln">' + it[3 + idx] + '</span>'); b.type = "button";
+      var li = el("li"), b = el("button", "pxb item", '<span class="gb"></span><span class="tt">' + it[idx] + '</span>'); b.type = "button"; b.title = it[3 + idx];
       b.onclick = function () { click(); item = i; scr = 0; show(); };
       li.append(b); list.append(li);
     });
@@ -193,11 +197,6 @@
     var b = el("button", "tl-tab", c[1 + idx] + " <small>(" + c[4].length + ")</small>"); b.type = "button"; b.setAttribute("role", "tab");
     b.onclick = function () { click(); cat = i; item = 0; scr = 0; tabs.querySelectorAll(".tl-tab").forEach(function (x, k) { x.classList.toggle("on", k === i); x.setAttribute("aria-selected", k === i); }); build(); };
     tabs.append(b);
-  });
-  /* the mini FM-1: a lit button cycles the screens of the item that is showing */
-  fm.addEventListener("click", function (e) {
-    var b = e.target.closest("[data-b]"); if (!b) return; click(); b.classList.add("down"); setTimeout(function () { b.classList.remove("down"); }, 140);
-    var it = C[cat][4][item]; if (b.classList.contains("lit") && it[6].length > 1) { scr = (scr + 1) % it[6].length; show(); }
   });
   tabs.firstChild.click();
 })();

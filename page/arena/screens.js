@@ -205,8 +205,13 @@ A.screens.play = async function () {
 
   if (mode === 'train') {
     $('#stagebox').style.background = '#14101a';
-    train = new A.Training({ canvas: cv });
-    help.innerHTML = A.t('tr_help'); 
+    train = new A.Training({ canvas: cv }); A.train = train;
+    help.innerHTML = A.t('tr_help');
+    const SONGS = ['banda', 'escala', 'groove', 'arpejo', 'rapido'];
+    const songBtn = mkBtn('', () => { train.nextSong(); label(); }, true);
+    const songLbl = document.createElement('span'); songLbl.className = 'help'; ctl.append(songLbl);
+    const label = () => { songBtn.textContent = A.t('tr_next'); songLbl.textContent = A.t('tr_song', { n: train.oi + 1, t: SONGS.length, name: A.t('sn_' + train.order[train.oi]) }); };
+    label(); train.onSong = label; 
     mkBtn(A.t('r_back'), back);
     return;
   }

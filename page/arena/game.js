@@ -424,6 +424,9 @@ function kbLayout() {
   return keys;
 }
 class Training {
+  static scare = (() => { const m = { body: new Image(), crow: [new Image(), new Image()], meta: { crows: [{ x: 12, y: 62, w: 26, h: 14 }, { x: 81, y: 20, w: 19, h: 16 }] } };
+    m.body.src = 'img/scarecrow.png'; m.crow[0].src = 'img/crow0.png'; m.crow[1].src = 'img/crow1.png';
+    fetch('img/scarecrow.json').then(r => r.json()).then(j => { m.meta = j; }).catch(() => {}); return m; })();
   constructor(o) {
     this.cv = o.canvas; this.cx = this.cv.getContext('2d'); this.cv.width = VW * 2; this.cv.height = VH * 2; this.cx.imageSmoothingEnabled = false;
     this.o = o; this.bars = []; this.hits = 0; this.miss = 0; this.dmg = 0; this.flash = 0; this.shake = 0; this.txt = []; this.speed = 80;
@@ -441,48 +444,81 @@ class Training {
     this.order = ['banda', 'escala', 'groove', 'arpejo', 'rapido']; this.oi = 0;      // troca de sequência sozinha ao fim de cada volta
     this.setPattern(this.order[0]); this.inst = 'fm1';
     this.next = performance.now() + 800; this.dummyT = 0; this.alive = true; this.combo = 0;
+    this.sway = 1; this.missStreak = 0;
+    this.crows = [{ i: 0, st: 'perch', x: 0, y: 0, dir: -1, t: 0 }, { i: 1, st: 'perch', x: 0, y: 0, dir: 1, t: 0 }];
     this.un = A.on('note', (e) => e.on && this.press(e));
     this.raf = requestAnimationFrame((t) => this.loop(t)); this.last = performance.now();
   }
   destroy() { this.alive = false; cancelAnimationFrame(this.raf); this.un(); }
   setPattern(name) { const p = this.PATS[name] || this.PATS.escala; this.patName = name; this.pat = p.seq; this.pi = 0; this.bpm = p.bpm; this.div = p.div; this.bars.length = 0; this.next = performance.now() + 600; }
   setInst(name) { this.inst = name; }
+  nextSong() { this.oi = (this.oi + 1) % this.order.length; this.setPattern(this.order[this.oi]); this.onSong && this.onSong(); }       // a música nova começa do começo
   press(e) {
     if (this.inst === 'fm1') A.synth.note(e.n, e.v, e.ch, true); else A.synth.inst(this.inst, e.n, e.v);
     const pc = (((e.n - KB0) % 12) + 12) % 12, cand = [pc, pc + 12, pc + 24].filter(k => k < 27), hitY = VH - 52;
     cand.forEach(k => { this.lit[k] = performance.now(); });
     const c = this.bars.filter(b => cand.includes(b.k) && !b.done).sort((a, b) => Math.abs(a.y - hitY) - Math.abs(b.y - hitY))[0];
     if (c && Math.abs(c.y - hitY) < 22) {
-      c.done = 1; const perfect = Math.abs(c.y - hitY) < 8; this.hits++; this.combo++;
+      c.done = 1; const perfect = Math.abs(c.y - hitY) < 8; this.hits++; this.combo++; this.missStreak = 0; this.sway = -this.sway; this.scareCrow();
       const d = Math.round((perfect ? 6 : 3) * (1 + Math.min(this.combo, 10) * .05)); this.dmg += d; this.flash = .12; this.shake = .25; this.dummyT = 0.35;
       this.txt.push({ t: 0, s: (perfect ? 'PERFEITO -' : 'BOM -') + d, c: perfect ? '#8f8' : '#fff', x: VW * .72 }); A.synth.hit(false);
-    } else { this.miss++; this.combo = 0; this.txt.push({ t: 0, s: 'MISS', c: '#f66', x: 20 + cand[0] * 13 }); }
+    } else { this.miss++; this.combo = 0; this.noteMiss(); this.txt.push({ t: 0, s: 'MISS', c: '#f66', x: 20 + cand[0] * 13 }); }
   }
+  scareCrow() { const p = this.crows.find(c => c.st === 'perch'); if (p) { p.st = 'away'; p.t = 0; p.dir = p.i === 0 ? -1 : 1; p.sx = null; } }
+  noteMiss() { this.missStreak++; if (this.missStreak >= 2) this.crows.forEach(c => { if (c.st === 'away' || c.st === 'gone') { c.st = 'back'; c.t = 0; c.sx = null; } }); }
   loop(now) {
     if (!this.alive) return; const dt = Math.min(.05, (now - this.last) / 1000); this.last = now;
     if (now > this.next) {
       const k = this.pat[this.pi++];
       if (k) this.bars.push({ k: k - 1, y: -10 });
       this.next = now + 60000 / this.bpm / this.div;
-      if (this.pi >= this.pat.length) { this.oi = (this.oi + 1) % this.order.length; const nx = this.PATS[this.order[this.oi]]; this.patName = this.order[this.oi]; this.pat = nx.seq; this.pi = 0; this.bpm = nx.bpm; this.div = nx.div; }
+      if (this.pi >= this.pat.length) { this.oi = (this.oi + 1) % this.order.length; const nx = this.PATS[this.order[this.oi]]; this.patName = this.order[this.oi]; this.pat = nx.seq; this.pi = 0; this.bpm = nx.bpm; this.div = nx.div; this.onSong && this.onSong(); }
     }
     const bottom = VH - 40;
-    for (const b of this.bars) { b.y += this.speed * dt; if (!b.done && b.y > bottom) { b.done = 1; this.miss++; this.combo = 0; this.txt.push({ t: 0, s: 'MISS', c: '#f66', x: 20 + b.k * 13 }); } }
+    for (const b of this.bars) { b.y += this.speed * dt; if (!b.done && b.y > bottom) { b.done = 1; this.miss++; this.combo = 0; this.noteMiss(); this.txt.push({ t: 0, s: 'MISS', c: '#f66', x: 20 + b.k * 13 }); } }
     this.bars = this.bars.filter(b => b.y < VH + 10 && !(b.done && b.y > bottom - 10)); this.txt.forEach(t => t.t += dt); this.txt = this.txt.filter(t => t.t < .8);
     this.flash = Math.max(0, this.flash - dt); this.shake = Math.max(0, this.shake - dt); this.dummyT = Math.max(0, this.dummyT - dt);
+    this.moveCrows(dt);
     this.draw(now); this.o.onFrame && this.o.onFrame(this); this.raf = requestAnimationFrame((t) => this.loop(t));
+  }
+  moveCrows(dt) {
+    const sc = Training.scare, SH = 189, K = .5, sx = VW * .74, gy = VH * .62 + 4, x0 = sx - 119 * K / 2, y0 = gy - SH * K;
+    this.crows.forEach(cr => {
+      const m = sc.meta.crows[cr.i], hx = x0 + m.x * K, hy = y0 + m.y * K; cr.t += dt;
+      if (cr.st === 'away') {                       // sobe e sai da tela para o lado
+        if (cr.sx == null) { cr.sx = hx; cr.sy = hy; }
+        const p = Math.min(1, cr.t / 1.1); cr.x = cr.sx + cr.dir * p * (VW * .5); cr.y = cr.sy - Math.sin(p * Math.PI * .8) * 70 - p * 20;
+        if (p >= 1) { cr.st = 'gone'; }
+      } else if (cr.st === 'back') {                // volta planando para o ombro
+        if (cr.sx == null) { cr.sx = hx + cr.dir * VW * .5; cr.sy = hy - 40; }
+        const p = Math.min(1, cr.t / 1.0), e = 1 - Math.pow(1 - p, 3); cr.x = cr.sx + (hx - cr.sx) * e; cr.y = cr.sy + (hy - cr.sy) * e - Math.sin(p * Math.PI) * 14;
+        if (p >= 1) cr.st = 'perch';
+      } else if (cr.st === 'gone') { cr.x = -50; cr.y = -50; }
+    });
   }
   draw(now) {
     const c = this.cx; c.setTransform(2, 0, 0, 2, 0, 0); c.imageSmoothingEnabled = false; c.fillStyle = '#1e1418'; c.fillRect(0, 0, VW, VH);
     const T = (s, x, y, col, sz, al) => { c.font = `600 ${sz}px "Pixelify Sans",monospace`; c.textAlign = al || 'left'; c.lineWidth = 4; c.strokeStyle = '#000'; c.lineJoin = 'round'; c.strokeText(s, x, y); c.fillStyle = col; c.fillText(s, x, y); };
     c.fillStyle = '#2a1f26'; c.fillRect(0, VH * .62, VW, VH * .38);
-    // espantalho
-    const dx = VW * .78 + (this.dummyT ? Math.sin(now / 24) * 3 : 0), dy = VH * .62;
-    c.fillStyle = '#000'; c.fillRect(dx - 1, dy - 62, 4, 64); c.fillRect(dx - 24, dy - 50, 50, 5);
-    c.fillStyle = '#a06a30'; c.fillRect(dx, dy - 61, 2, 62); c.fillRect(dx - 23, dy - 49, 48, 3);
-    c.fillStyle = '#000'; c.fillRect(dx - 9, dy - 74, 20, 20); c.fillStyle = this.flash ? '#fff' : '#e8c070'; c.fillRect(dx - 8, dy - 73, 18, 18);
-    c.fillStyle = '#000'; c.fillRect(dx - 4, dy - 68, 3, 3); c.fillRect(dx + 3, dy - 68, 3, 3); c.fillRect(dx - 4, dy - 61, 10, 2);
-    c.fillStyle = '#000'; c.fillRect(dx - 13, dy - 30, 28, 4); c.fillStyle = '#c0504a'; c.fillRect(dx - 12, dy - 29, 26, 2);
+    // espantalho (imagem) com dois corvos que voam ao tomar golpe e voltam depois de 2 erros seguidos
+    const sc = Training.scare; const SW = 119, SH = 189, K = .5;                    // 1 pixel da imagem = 1 pixel do dispositivo (a tela é 2x)
+    const sx = VW * .74, gy = VH * .62 + 4, tw = this.sway * Math.max(0, this.dummyT / .35);
+    if (sc.body.complete && sc.body.naturalWidth) {
+      const w = SW * K, h = SH * K, x0 = Math.round(sx - w / 2), y0 = Math.round(gy - h);
+      c.fillStyle = '#0005'; c.fillRect(Math.round(sx - 16), Math.round(gy - 1), 32, 3);
+      for (let r = 0; r < SH; r++) {                                              // balanço: cada linha se desloca mais quanto mais alta (sem borrar os pixels)
+        const k = 1 - r / SH, off = Math.round(tw * 5 * k * k);
+        c.drawImage(sc.body, 0, r, SW, 1, x0 + off, y0 + r * K, w, K + .02);
+      }
+      this.crows.forEach(cr => {
+        const img = sc.crow[cr.i]; if (!img.complete || !img.naturalWidth) return;
+        const hx = x0 + sc.meta.crows[cr.i].x * K + Math.round(tw * 5 * Math.pow(1 - sc.meta.crows[cr.i].y / SH, 2)), hy = y0 + sc.meta.crows[cr.i].y * K;
+        let X = cr.st === 'perch' ? hx : cr.x, Y = cr.st === 'perch' ? hy : cr.y;
+        const fly = cr.st !== 'perch', flap = fly && Math.floor(now / 90) % 2, wv = sc.meta.crows[cr.i].w * K, hv = sc.meta.crows[cr.i].h * K;
+        c.save(); c.translate(Math.round(X), Math.round(Y)); if (cr.dir < 0 && fly) { c.scale(-1, 1); c.translate(-wv, 0); }
+        c.drawImage(img, 0, 0, wv, flap ? hv * .62 : hv); c.restore();
+      });
+    }
     // teclado do FM1 com o número de cada tecla (1..27); as barras caem sobre a tecla
     const ky = VH - 40, nowt = performance.now();
     for (const e of this.keys) {                       // pistas
@@ -506,7 +542,7 @@ class Training {
     }
     for (const t of this.txt) T(t.s, t.x, VH * .4 - t.t * 30, t.c, 12, 'center');
     T(`${A.t('tr_hits')} ${this.hits}   ${A.t('tr_miss')} ${this.miss}   ${A.t('tr_dmg')} ${this.dmg}   COMBO ${this.combo}`, 8, 14, '#fff', 12);
-    T(A.t('tr_keys'), VW - 8, 14, '#f0c860', 10, 'right');
+    T(A.t('tr_keys'), VW - 8, 30, '#f0c860', 10, 'right');
   }
 }
 A.Training = Training;

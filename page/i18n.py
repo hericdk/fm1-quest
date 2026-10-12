@@ -293,3 +293,8 @@ k("ck_text", "Este site usa cookies apenas para o Google Analytics (contar visit
 k("ck_yes", "Aceitar", "Accept", "Aceptar")
 k("ck_no", "Recusar", "Decline", "Rechazar")
 k("ck_open", "Cookies e estatísticas (Google Analytics)", "Cookies and statistics (Google Analytics)", "Cookies y estadísticas (Google Analytics)")
+
+# ---------- TL;DR
+k("tl_h", "TL;DR", "TL;DR", "TL;DR")
+k("tl_sub", "O que entrou em cada categoria", "What went into each category", "Qué entró en cada categoría")
+k("m_tldr", "TL;DR", "TL;DR", "TL;DR")

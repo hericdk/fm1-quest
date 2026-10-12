@@ -277,6 +277,7 @@
     <a href="#controles" data-i="m_ctrl"></a>
     <a href="#sobre" data-i="m_about"></a>
     <a href="#video" data-i="m_video"></a>
+    <a href="#tldr" data-i="m_tldr"></a>
     <a href="#novidades" data-i="m_news"></a>
     <a href="#instalar" data-i="m_install"></a>
     <a href="#voltar" data-i="m_back"></a>
@@ -384,6 +385,12 @@
     <p class="small vlink"><a id="vlink" href="https://www.youtube.com/watch?v=ITECI2cEHsU" target="_blank" rel="noopener" data-i="v_link"></a></p>
   </section>
 
+  <section id="tldr">
+    <h2 class="rv" data-i="tl_h"></h2>
+    <p class="tl-sub rv" data-i="tl_sub"></p>
+    <div id="tl" class="rv"></div>
+  </section>
+
   <section id="novidades">
     <h2 class="rv" data-i="n_h"></h2>
     <p class="lead rv" data-i="n_lead"></p>
@@ -436,8 +443,10 @@
   <div class="ckb"><button type="button" id="ck-yes" data-i="ck_yes"></button><button type="button" id="ck-no" data-i="ck_no"></button></div>
 </div>
 
+<link rel="stylesheet" href="assets/tldr.css">
 <script src="assets/js/gsap.min.js"></script>
 <script src="assets/js/ScrollTrigger.min.js"></script>
+<script src="assets/js/tldr.js" defer></script>
 <script type="module">
 /*LIB*/
 const $ = (id) => document.getElementById(id);

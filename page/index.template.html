@@ -333,6 +333,7 @@
           <div class="dk-row">
             <button class="upbtn" id="ub2" type="button"><svg viewBox="0 0 44 44" aria-hidden="true"><circle class="trk" cx="22" cy="22" r="19"/><circle class="ring" id="ur2" cx="22" cy="22" r="19"/></svg><span data-i="d_send"></span></button>
             <button class="btn2" id="eb2" type="button" data-i="d_erase_s"></button>
+            <button class="btn2" id="pk2" type="button" data-i="d_pack"></button>
           </div>
           <input type="file" id="uf2" hidden accept=".mid,.midi,audio/midi,audio/x-midi">
           <div class="small lim" data-i="d_ok2"></div>
@@ -344,6 +345,7 @@
           <div class="dk-row">
             <button class="upbtn" id="ub3" type="button"><svg viewBox="0 0 44 44" aria-hidden="true"><circle class="trk" cx="22" cy="22" r="19"/><circle class="ring" id="ur3" cx="22" cy="22" r="19"/></svg><span data-i="d_send"></span></button>
             <button class="btn2" id="eb3" type="button" data-i="d_erase_s"></button>
+            <button class="btn2" id="pk3" type="button" data-i="d_pack"></button>
           </div>
           <input type="file" id="uf3" hidden accept=".mid,.midi,audio/midi,audio/x-midi">
           <div class="small lim" data-i="d_ok3"></div>
@@ -584,9 +586,10 @@ addEventListener("message", (e) => {
   if (m.fm1br === "state") { smp = m; paintDock(); }
   else if (m.fm1br === "progress") { $(TAB[p].ring).style.strokeDashoffset = String(119.4 * (1 - m.v)); }
   else if (m.fm1br === "uploading") { upBusy = true; $(TAB[p].btn).classList.add("spin"); $(TAB[p].btn).disabled = true; say(p, "d_sending"); }
-  else if (m.fm1br === "uploaded") { upBusy = false; ringOff(p); if (m.ok) { say(p, "d_done", plabel(p, m.k)); if (p === 1 && TAB[1].trim) { sayRaw(1, tx("d_done").replace("{n}", plabel(1, m.k)) + " " + tx("d_trim").replace("{n}", TAB[1].trim), "ok"); TAB[1].trim = 0; } TAB[p].adv = true; } else say(p, "d_fail", "", true); paintDock(); }
+  else if (m.fm1br === "uploaded") { if (window.__packDone) { const d = window.__packDone; window.__packDone = null; setTimeout(() => d(m), 60); } upBusy = false; ringOff(p); if (m.ok) { say(p, "d_done", plabel(p, m.k)); if (p === 1 && TAB[1].trim) { sayRaw(1, tx("d_done").replace("{n}", plabel(1, m.k)) + " " + tx("d_trim").replace("{n}", TAB[1].trim), "ok"); TAB[1].trim = 0; } TAB[p].adv = true; } else say(p, "d_fail", "", true); paintDock(); }
   else if (m.fm1br === "error") {
     if (m.cmd === "connect") { const c = String(m.message).replace(/^connect:/, ""); flash(c === "nodevice" ? "d_conn_none" : c === "denied" ? "d_conn_perm" : c === "noreply" ? "d_conn_noreply" : "d_conn_fail", c.replace(/^error/, "")); return; }
+    if (window.__packDone) { const d = window.__packDone; window.__packDone = null; setTimeout(() => d(m), 60); }
     upBusy = false; ringOff(p);
     const KEYS = { "too-big": "d_toobig", "bad-file": "d_bad", "song:toomany": "d_s_many", "song:empty": "d_s_empty", "song:notMidi": "d_bad", "song:division": "d_s_smpte", "song:toolong": "d_s_long", "no-songs": "d_old_fw" };
     const key = KEYS[m.message]; if (key) say(p, key, "", true); else sayRaw(p, tx("d_fail") + (m.message || "?"), "bad"); paintDock();
@@ -619,6 +622,21 @@ $("pv1").addEventListener("click", () => { bridgePost({ fm1cmd: "preview", k: TA
   });
 });
 
+
+/* the three 64-bar training songs (STEPS, GROOVE, ARCADE): the same .mid files go to Piano Hero and FM Hero, slots 1-3 */
+const PACK = ["STEPS", "GROOVE", "ARCADE"], ROOTP = /\/(en|es)(\/|$)/.test(location.pathname) ? "../" : "";
+[2, 3].forEach((p) => {
+  $("pk" + p).addEventListener("click", async () => {
+    if (upBusy) return; if (!confirm(tx("d_pack_q"))) return;
+    ga("song_pack", { kind: p === 2 ? "piano" : "hero" });
+    for (let k = 0; k < PACK.length; k++) {
+      let f; try { const r = await fetch(ROOTP + "media/songs/" + PACK[k] + ".mid"); f = new File([await r.blob()], PACK[k] + ".mid", { type: "audio/midi" }); } catch (e) { say(p, "d_fail", "?", true); return; }
+      const m = await new Promise((res) => { window.__packDone = res; bridgePost({ fm1cmd: "send-song", kind: TAB[p].kind, k, p, file: f }); });
+      if (m && m.fm1br === "error") return;                 /* the dock already shows what went wrong */
+    }
+    say(p, "d_done", PACK.join(", "));
+  });
+});
 const prog = $("prog"), bar = $("bar"), st = $("status");
 const setStatus = (txt, kind = "") => { st.textContent = txt; st.title = txt; st.className = kind; prog.hidden = false; };
 const setBar = (v, kind = "") => { bar.firstElementChild.style.width = Math.max(0, Math.min(100, v)) + "%"; bar.className = kind; };
@@ -634,6 +652,7 @@ const short = (m) => String(m).split(/(?<=\.)\s/)[0];                  /* the st
 const hasMsg = (c) => !!I18N["j_" + c];
 const failed = (e) => {
   ga("install_error", { reason: String((e && e.message) || e).slice(0, 80) });
+  if (e && e.code === "melodee") window.__melodeeAck = true;                                       /* the second press goes ahead */
   if (e && e.code === "notfound") { setBar(0); setStatus(t("plugmsg")); st.dataset.plug = "1"; plugLabel(true); return; }   /* just not plugged in: not an error, no log */
   const code = e && e.code && hasMsg(e.code) ? e.code : null;
   const full = code ? t(code) + (e.detail || "") : (e && e.message) || t("unknown");
@@ -706,7 +725,7 @@ async function runInstall() {
       ota.link.close();
       if (await up.resume(image, step)) { setBar(100, "ok"); setStatus(t("done") + ". " + t("replug"), "ok"); } else stopped();
     } else {
-      await up.install(image, meta.product, step);
+      await up.install(image, meta.product, step, { melodeeAck: !!window.__melodeeAck });
     }
     afterRun();
   } catch (e) { failed(e); }

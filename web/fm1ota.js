@@ -173,12 +173,15 @@ export class Updater {
   }
 
   // full install: running firmware -> loader -> new firmware
-  async install(image, product, onStep) {
+  async install(image, product, onStep, opts = {}) {
     const step = onStep || (() => {});
     const dev = await this.find((id) => !IS_OTA(id));
     if (!dev) throw fail("notfound", "FM-1 not found (USB cable, and no other app using it?)");
     const [model] = product.split("_");
     if (dev.id.model !== model) { dev.link.close(); throw fail("model", `the device is ${dev.id.text}, the package is for ${product}`); }
+    // Melodee (a Felucca fork with its own data layout and release identities FM-1_9 + 3 to 5 digits): flashing over it was not tested.
+    // Say so once, with the safe way (its own "Return to official V15", which saves a backup first); pressing Install again goes ahead.
+    if (/^FM-1_9\d{3,5}$/.test(dev.id.text) && !opts.melodeeAck) { dev.link.close(); throw fail("melodee", "this FM-1 runs Melodee", " (" + dev.id.text + ")"); }
     step("start", dev.id.text);
     dev.link.send(UPGRADE);
     await sleep(2000);

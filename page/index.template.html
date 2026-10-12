@@ -459,6 +459,7 @@
 })();
 </script>
 <script src="assets/js/tldr.js" defer></script>
+<script src="arena/banner.js" defer></script>
 <script type="module">
 /*LIB*/
 const $ = (id) => document.getElementById(id);
@@ -767,7 +768,7 @@ document.addEventListener("click", (e) => {
 }, true);
 addEventListener("message", (e) => {                                  /* the 3D model reports its two interesting clicks */
   if (e.origin !== location.origin || !e.data || !e.data.fm1ga) return;
-  if (e.data.fm1ga === "pixel_lock") ga("pixel_lock", { on: !!e.data.on }); else if (e.data.fm1ga === "sim_power_on") ga("sim_power_on");
+  if (e.data.fm1ga === "sim_power_on") ga("sim_power_on");
 });
 </script>
 </body>

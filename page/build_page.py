@@ -67,7 +67,7 @@ def main(out, pkg, version):
     if not (out / "firmware" / name).exists():
         shutil.copy(pkg, out / "firmware" / name)
     meta = {"version": version, "product": product, "pkg": "firmware/" + name, "sha256": hashlib.sha256(raw).hexdigest()}
-    for d in ("assets", "media"):
+    for d in ("assets", "media", "arena"):
         shutil.rmtree(out / d, ignore_errors=True)
         shutil.copytree(HERE / d, out / d)
     for f in ("favicon.ico", "favicon-32.png", "apple-touch-icon.png", "android-chrome-192.png", "android-chrome-512.png"):
@@ -130,7 +130,7 @@ def main(out, pkg, version):
         i18n_json = json.dumps(T, ensure_ascii=False).replace("</", "<\\/")
         html = html.replace("/*LIB*/", lib).replace("/*META*/", json.dumps(m2)).replace("/*I18N*/", i18n_json)
         if P:
-            html = re.sub(r'(src|href)="(assets|editor|firmware|media)/', lambda mm: f'{mm.group(1)}="../{mm.group(2)}/', html)
+            html = re.sub(r'(src|href)="(assets|editor|firmware|media|arena)/', lambda mm: f'{mm.group(1)}="../{mm.group(2)}/', html)
             html = html.replace("url(assets/", "url(../assets/").replace('"sim/index.html?embed=1', '"../sim/index.html?embed=1')
         html = html.replace("sim/index.html?embed=1", "sim/index.html?embed=1&v=" + simv)
         html = html.replace("__BUILD__", simv).replace("__BUILDURL__", P + "build.json")

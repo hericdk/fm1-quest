@@ -134,15 +134,3 @@
 .tav .tbox{position:absolute;right:4px;top:25px;width:112px;z-index:2;background:rgba(20,12,16,.9);border:2px solid #c8963c;box-shadow:0 0 0 1px #000;padding:3px 4px}
 .tav .tfoot{position:absolute;left:0;right:0;bottom:0;height:10px;background:#000;color:#8a8a96;font-size:8px;line-height:10px;padding-left:4px;z-index:2}
 .tav.hide .tbox{display:none}
-
-/* pixel-art / lock button: dithered on hover, with a black tip that wipes in from the right (only where there is a mouse) */
-.tools3d{flex-wrap:nowrap}
-.tools3d .pixtip{position:absolute;right:calc(100% + 10px);bottom:0;width:min(250px,60vw);background:#000;color:#f2e2c4;border:1px solid var(--gold,#c8963c);padding:10px 12px;font:500 12px/1.4 "Pixelify Sans",system-ui,sans-serif;text-align:left;clip-path:inset(0 0 0 100%);transition:clip-path .3s steps(8);pointer-events:none;visibility:hidden}
-@media (hover:hover) and (pointer:fine){
-  .tools3d button[data-t=pix]:hover{-webkit-mask-image:conic-gradient(#000 25%,transparent 0 50%,#000 0 75%,transparent 0);mask-image:conic-gradient(#000 25%,transparent 0 50%,#000 0 75%,transparent 0);-webkit-mask-size:4px 4px;mask-size:4px 4px;opacity:.8}
-  .tools3d button[data-t=pix]:hover ~ .pixtip{clip-path:inset(0);visibility:visible}
-}
-.tools3d button[data-t=pix]:focus-visible{outline:2px solid var(--gold,#c8963c);outline-offset:2px}
-.tools3d button[data-t=pix]:focus-visible ~ .pixtip{clip-path:inset(0);visibility:visible}
-.stage3d.pix{image-rendering:pixelated}
-@media (prefers-reduced-motion:reduce){.tools3d .pixtip{transition:none}}

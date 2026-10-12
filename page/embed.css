@@ -7,4 +7,4 @@ html.embed, html.embed body { background: transparent !important; margin: 0; ove
 .embed .stage3d { height: 100vh !important; min-height: 0 !important; border: 0 !important; border-radius: 0 !important; background: transparent !important; }
 .embed .s3d-status { display: none !important; }
 
-.embed .tools3d [data-t=mini], .embed .mini3d { display: none !important; }
+/* the floating screen (mini) and its icon are shown on the site too */

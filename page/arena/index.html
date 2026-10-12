@@ -1,0 +1,54 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FM1 Arena</title><meta name="robots" content="noindex"><link rel="stylesheet" href="arena.css"></head>
+<body><div id="bg"><video id="bgv" autoplay muted loop playsinline preload="auto" poster="img/arena-bg.webp"><source src="video/arena-bg.webm" type="video/webm"></video></div>
+<nav id="top" aria-label="Firmwares"></nav>
+<main id="app">
+<section class="scr" data-screen="menu">
+<h1 class="t">FM1 Arena</h1>
+<p class="sub" data-i="tag"></p>
+<div id="connect" class="card" hidden>
+  <h2 data-i="c_h"></h2>
+  <p data-i="c_p"></p>
+  <button class="btn gold" id="btnconnect" data-i="c_btn"></button> <span id="cerr" style="color:#f66"></span>
+</div>
+<p class="help" id="aust" hidden></p>
+<ul class="menu" id="menu" hidden>
+  <li><button data-go="cpu" data-i="m_cpu"></button></li>
+  <li><button data-go="pvp"><span data-i="m_pvp"></span><em class="beta">(beta)</em></button></li>
+  <li><button data-go="train" data-i="m_train"></button></li>
+  <li><button data-go="rank" data-i="m_rank"></button></li>
+</ul>
+<div id="rankbox" class="card" hidden>
+  <div class="tabs"><button data-k="conns" class="on" data-i="rk_conns"></button><button data-k="ver" data-i="rk_ver"></button><button data-k="wins" data-i="rk_wins"></button></div>
+  <div id="rkbody"></div>
+  <p class="help" id="rkdemo"></p>
+</div>
+<p class="credits" data-i="credits"></p>
+<p class="lgpd" data-i="lgpd"></p>
+</section><section class="scr" data-screen="lobby">
+<h1 class="t" data-i="lb_h"></h1>
+<p class="sub" data-i="lb_sub"></p>
+<div class="tabs" id="sizes"><button data-n="2" class="on" data-i="lb_1"></button><button data-n="4" data-i="lb_2"></button></div>
+<div class="row split"><button class="btn" id="back" data-i="lb_back"></button><button class="btn gold" id="create" data-i="lb_create"></button><button class="btn gold" id="quick" data-i="lb_join"></button></div>
+<div class="rooms" id="rooms"></div>
+<div id="mine" class="card" hidden></div>
+<p class="credits" data-i="credits"></p>
+</section><section class="scr" data-screen="play">
+<div id="box">
+  <div id="hud">
+    <div class="side" id="sa"><div class="who" id="wa"></div><div class="bar"><i id="hpa" style="width:100%"></i></div><div class="bar ult"><i id="ua" style="width:0"></i></div></div>
+    <div id="clock">--<small id="phase"></small></div>
+    <div class="side r" id="sb"><div class="who" id="wb"></div><div class="bar"><i id="hpb" style="width:100%"></i></div><div class="bar ult"><i id="ub" style="width:0"></i></div></div>
+  </div>
+  <div id="stagebox"><canvas id="cv"></canvas>
+    <div id="ring" hidden><i id="rc"></i><b id="rn"></b></div><div id="msg"></div>
+    <div id="overlay"><div id="ovc"></div></div>
+  </div>
+  <p class="help" id="help"></p>
+  <div class="row" id="ctl"></div>
+</div>
+</section>
+</main>
+<div id="mosaic" aria-hidden="true"><b id="mlogo">FM1 Arena</b></div>
+<script src="vendor/gsap.min.js"></script><script src="vendor/trystero.js"></script><script src="config.js"></script><script src="i18n.js"></script><script src="core.js"></script><script src="sprites.js"></script><script src="game.js"></script><script src="screens.js"></script>
+</body></html>

@@ -1,0 +1,106 @@
+@font-face{font-family:"Pixelify Sans";src:url(fonts/PixelifySans-400.ttf);font-weight:400}
+@font-face{font-family:"Pixelify Sans";src:url(fonts/PixelifySans-600.ttf);font-weight:600 700}
+@font-face{font-family:"Jacquarda Bastarda 9";src:url(fonts/JacquardaBastarda9.ttf);font-display:swap}
+:root{--ink:#1e1418;--tile:#3a2620;--gold:#f0c860;--brand:#c8963c;--line:#5a3a28;--red:#e0503c;--txt:#f2e2c4;--dim:#a89080;--px:4px}
+*{box-sizing:border-box;border-radius:0!important}
+html,body{margin:0;height:100%;background:var(--ink);color:var(--txt);font:400 17px/1.4 "Pixelify Sans",ui-monospace,monospace;-webkit-font-smoothing:none;font-smooth:never}
+img,canvas{image-rendering:pixelated}
+body{overflow-x:hidden}
+/* tudo é pixel: cantos em degrau (sombras nas 4 faixas), sem arredondar */
+.px{box-shadow:calc(var(--px)*-1) 0 0 0 var(--bc,#000),var(--px) 0 0 0 var(--bc,#000),0 calc(var(--px)*-1) 0 0 var(--bc,#000),0 var(--px) 0 0 var(--bc,#000);margin:var(--px)}
+#bg{position:fixed;inset:0;background:var(--ink);z-index:0;overflow:hidden}
+#bgv{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;image-rendering:pixelated}
+#bg::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% 55%,#0000 35%,#000a 100%)}
+#sky{position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+#sky i{position:absolute;display:block;background-repeat:no-repeat;image-rendering:pixelated;animation:drift linear infinite}
+@keyframes drift{from{transform:translateX(-30vw)}to{transform:translateX(130vw)}}
+#top{position:fixed;top:0;left:0;right:0;z-index:5;display:flex;justify-content:center;gap:clamp(10px,3vw,40px);padding:8px 12px;background:linear-gradient(#000c,#0000);align-items:flex-end;min-height:90px}
+.fwcell{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:70px}
+.fwcell .pos{font-size:14px;color:var(--gold)}
+.fwcell .num{font-size:13px;color:var(--dim);text-shadow:1px 1px 0 #000}
+.fwcell.me .pos{color:#8f8}
+.fwlogo{display:block;max-width:120px;object-fit:contain;background:#000;padding:3px 5px}
+.fwtxt{display:inline-block;background:#000;color:var(--gold);padding:4px 7px;letter-spacing:.05em;font-weight:600;white-space:nowrap}
+#app{position:relative;z-index:2;min-height:100vh;padding:176px 16px 40px}
+.scr{display:none}.scr.on{display:block}
+h1.t{display:block;margin:0 0 8px;font:400 clamp(36px,5vw,46px)/1.1 "Jacquarda Bastarda 9",serif;color:var(--gold);letter-spacing:.02em}
+.sub,.lgpd,.help,.credits{background:#1e1418cc;padding:6px 10px;display:inline-block;color:var(--txt)}
+.lgpd,.credits{font-size:14px;color:var(--dim);max-width:600px}
+.credits{font-size:12px;display:block;width:fit-content;margin-top:14px}
+.menu{display:flex;flex-direction:column;gap:12px;width:min(440px,100%);margin:10px 4px;padding:0;list-style:none}
+.menu button,.btn,.tabs button{--bc:var(--line);display:flex;align-items:center;gap:12px;width:calc(100% - 8px);margin:var(--px);text-align:left;background:#1e1418f0;color:var(--txt);border:0;padding:12px 16px;font:600 20px/1 "Pixelify Sans",ui-monospace,monospace;cursor:pointer;
+  box-shadow:calc(var(--px)*-1) 0 0 0 var(--bc),var(--px) 0 0 0 var(--bc),0 calc(var(--px)*-1) 0 0 var(--bc),0 var(--px) 0 0 var(--bc),var(--px) var(--px) 0 var(--px) #000}
+.menu button::before{content:"";width:12px;height:12px;flex:none}
+.menu button:hover,.menu button:focus-visible,.menu button.sel,.btn:hover,.tabs button:hover{--bc:var(--gold);color:var(--gold);outline:0;background:var(--tile)}
+.menu button:hover::before,.menu button.sel::before{background:var(--gold);clip-path:polygon(0 0,100% 50%,0 100%)}
+.btn{display:inline-flex;width:auto;justify-content:center;margin:6px 8px}
+.btn.gold{background:var(--gold);color:var(--ink);--bc:#fff7d6}
+.btn.gold:hover{background:#ffe08a;color:var(--ink)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:10px;align-items:center}
+.row.split{justify-content:space-between;max-width:640px}
+.card{--bc:var(--line);background:#1e1418f2;padding:16px;margin:16px 6px;max-width:660px;box-shadow:calc(var(--px)*-1) 0 0 0 var(--bc),var(--px) 0 0 0 var(--bc),0 calc(var(--px)*-1) 0 0 var(--bc),0 var(--px) 0 0 var(--bc),var(--px) var(--px) 0 var(--px) #000}
+.card h2{margin:0 0 8px;font:600 26px/1.2 "Pixelify Sans",ui-monospace,monospace;color:var(--gold)}
+.tabs{display:flex;gap:10px;margin:10px 0;flex-wrap:wrap}
+.tabs button{width:auto;padding:8px 12px;font-size:16px}
+.tabs button.on{--bc:var(--gold);color:var(--gold)}
+table.rk{border-collapse:collapse;width:100%}
+table.rk td,table.rk th{padding:6px 8px;border-bottom:2px solid #3a2a22;text-align:left}
+table.rk td.n{text-align:right;color:var(--gold)}
+.rooms{display:grid;gap:12px;margin:10px 4px;max-width:660px}
+.room{--bc:var(--line);display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;background:#1e1418f2;padding:10px 12px;margin:4px;box-shadow:calc(var(--px)*-1) 0 0 0 var(--bc),var(--px) 0 0 0 var(--bc),0 calc(var(--px)*-1) 0 0 var(--bc),0 var(--px) 0 0 var(--bc)}
+.room b{color:var(--gold)}
+.pl{display:flex;gap:4px;align-items:center}
+.pill{background:#000;border:2px solid var(--line);padding:1px 6px;font-size:14px}
+.arenas{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-top:8px}
+.arenas button{padding:0;border:0;background:#000;aspect-ratio:16/9;position:relative;cursor:pointer;overflow:hidden;margin:4px;box-shadow:-4px 0 0 0 var(--line),4px 0 0 0 var(--line),0 -4px 0 0 var(--line),0 4px 0 0 var(--line)}
+.arenas button.on{box-shadow:-4px 0 0 0 var(--gold),4px 0 0 0 var(--gold),0 -4px 0 0 var(--gold),0 4px 0 0 var(--gold)}
+.arenas canvas{width:100%;height:100%;display:block}
+.arenas span{position:absolute;left:0;right:0;bottom:0;background:#000c;font-size:12px;padding:2px 4px;text-align:left;color:var(--txt)}
+input[type=text]{background:#000;color:var(--txt);border:0;padding:9px 11px;font:600 18px "Pixelify Sans";margin:4px;box-shadow:-4px 0 0 0 var(--line),4px 0 0 0 var(--line),0 -4px 0 0 var(--line),0 4px 0 0 var(--line)}
+/* luta */
+#box{width:clamp(520px,50vw,980px);margin:0 auto;position:relative}
+#hud{display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:start;margin-bottom:10px}
+.side{display:flex;flex-direction:column;gap:6px}
+.side.r{align-items:flex-end}
+.bar{height:20px;background:#2a1f26;position:relative;width:calc(100% - 8px);margin:4px;box-shadow:-4px 0 0 0 #000,4px 0 0 0 #000,0 -4px 0 0 #000,0 4px 0 0 #000;
+  background-image:repeating-linear-gradient(90deg,transparent 0 11px,#0008 11px 12px)}
+.bar i{display:block;height:100%;background:#4ac86a;transition:width .12s steps(6);background-image:linear-gradient(#ffffff40 0 25%,#0000 25%)}
+.bar.ult{height:10px}.bar.ult i{background:var(--gold)}
+.side.r .bar i{margin-left:auto}
+.who{display:flex;gap:8px;align-items:center;font-size:15px}
+.side.r .who{flex-direction:row-reverse}
+#clock{text-align:center;font:600 30px/1.05 "Pixelify Sans",ui-monospace,monospace;color:#fff;min-width:100px;text-shadow:-2px 0 #000,2px 0 #000,0 -2px #000,0 2px #000}
+#clock small{display:block;font-size:14px;color:var(--dim)}
+#stagebox{position:relative;background:#000;aspect-ratio:16/9;margin:6px;box-shadow:-6px 0 0 0 #000,6px 0 0 0 #000,0 -6px 0 0 #000,0 6px 0 0 #000,0 0 0 10px var(--line)}
+#cv{width:100%;height:100%;display:block}
+#ring{display:none!important}
+#msg{display:none}
+#overlay{position:absolute;inset:0;background:#000c;display:none;place-items:center;text-align:center;padding:16px}
+#overlay.on{display:grid}
+#overlay h2{margin:0 0 10px;font:400 clamp(30px,4.5vw,46px)/1.1 "Jacquarda Bastarda 9",serif;color:var(--gold)}
+.help{font-size:15px;margin-top:10px;max-width:760px}
+.btn.save::before{content:"";width:14px;height:14px;background:currentColor;clip-path:polygon(35% 0,65% 0,65% 40%,90% 40%,50% 85%,10% 40%,35% 40%)}
+.btn.share::before{content:"";width:14px;height:14px;background:currentColor;clip-path:polygon(0 50%,60% 0,60% 30%,100% 30%,100% 70%,60% 70%,60% 100%)}
+#dev{position:fixed;right:10px;bottom:10px;z-index:30;background:#000c;border:2px solid var(--gold);padding:8px;font-size:13px}
+#dev select{background:#000;color:var(--txt);border:2px solid var(--line);font:inherit}
+@media(max-width:700px){#box{width:100%}#top{min-height:76px}}
+
+.plq{width:132px;height:88px;background-size:100% 100%;background-repeat:no-repeat;image-rendering:pixelated;display:grid;place-items:center;padding:6px 10px 18px}
+.plq .fwlogo{max-width:104px;max-height:34px}
+.plq .fwtxt{font-size:13px}
+#top{min-height:128px}
+.fwcell .pos{text-shadow:2px 2px 0 #000}
+
+#mosaic{position:fixed;inset:0;z-index:200;display:none;grid-template-columns:repeat(16,1fr);grid-template-rows:repeat(9,1fr);pointer-events:none;background:transparent}
+#mosaic.on{display:grid;pointer-events:all}
+#mosaic i{display:block;transform-origin:center;image-rendering:pixelated}
+#mlogo{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);font:400 clamp(40px,8vw,84px)/1 "Jacquarda Bastarda 9",serif;color:var(--gold);letter-spacing:.02em;visibility:hidden;text-align:center}
+
+.beta{font:400 22px/1 "Jacquarda Bastarda 9",serif;font-style:normal;color:var(--gold);margin-left:12px;letter-spacing:.02em}
+.btn.flag{--bc:#f0c860;color:#f0c860;background-color:#8e1f1a;
+  background-image:repeating-linear-gradient(90deg,#00000000 0 14px,#00000030 14px 28px),repeating-linear-gradient(0deg,#a8281c 0 6px,#8e1f1a 6px 12px);
+  background-size:56px 100%,100% 12px;animation:flagwave 1.1s steps(4) infinite;text-shadow:2px 2px 0 #000;
+  box-shadow:calc(var(--px)*-1) 0 0 0 var(--bc),var(--px) 0 0 0 var(--bc),0 calc(var(--px)*-1) 0 0 var(--bc),0 var(--px) 0 0 var(--bc),var(--px) var(--px) 0 var(--px) #000}
+.btn.flag:hover{color:#fff7d6;background-color:#a8281c}
+@keyframes flagwave{from{background-position:0 0,0 0}to{background-position:56px 0,0 12px}}

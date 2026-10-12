@@ -1,0 +1,330 @@
+{
+ "93": {
+  "name": "Armazém",
+  "w": 512,
+  "h": 200,
+  "layers": [
+   {
+    "name": "fundo",
+    "src": "img/stages/s93_0.png",
+    "w": 512,
+    "h": 152,
+    "par": 0.25,
+    "loop": true,
+    "spd": 0,
+    "y": 0,
+    "a": 1
+   },
+   {
+    "name": "cenário",
+    "src": "img/stages/s93_1.png",
+    "w": 512,
+    "h": 200,
+    "par": 1,
+    "loop": false,
+    "spd": 0,
+    "y": 0,
+    "a": 1
+   }
+  ],
+  "floor": 0.9,
+  "bg": null
+ },
+ "94": {
+  "name": "Sala de vidro",
+  "w": 512,
+  "h": 200,
+  "layers": [
+   {
+    "name": "cenário",
+    "src": "img/stages/s94_0.png",
+    "w": 512,
+    "h": 200,
+    "par": 1,
+    "loop": false,
+    "spd": 0,
+    "y": 0,
+    "a": 1
+   }
+  ],
+  "floor": 0.85,
+  "bg": null
+ },
+ "95": {
+  "name": "Salão roxo",
+  "w": 512,
+  "h": 228,
+  "layers": [
+   {
+    "name": "cenário",
+    "src": "img/stages/s95_0.png",
+    "w": 512,
+    "h": 228,
+    "par": 1,
+    "loop": false,
+    "spd": 0,
+    "y": 0,
+    "a": 1
+   }
+  ],
+  "floor": 0.96,
+  "bg": "#be6ec8"
+ },
+ "96": {
+  "name": "Parque",
+  "w": 512,
+  "h": 198,
+  "layers": [
+   {
+    "name": "fundo",
+    "src": "img/stages/s96_0.png",
+    "w": 512,
+    "h": 226,
+    "par": 0.25,
+    "loop": true,
+    "spd": 0,
+    "y": 0,
+    "a": 1
+   },
+   {
+    "name": "cenário",
+    "src": "img/stages/s96_1.png",
+    "w": 512,
+    "h": 198,
+    "par": 1,
+    "loop": false,
+    "spd": 0,
+    "y": 0,
+    "a": 1
+   }
+  ],
+  "floor": 0.92,
+  "bg": null
+ },
+ "97": {
+  "name": "Telhado",
+  "w": 512,
+  "h": 163,
+  "layers": [
+   {
+    "name": "fundo",
+    "src": "img/stages/s97_0.png",
+    "w": 512,
+    "h": 160,
+    "par": 0.2,
+    "loop": true,
+    "spd": 0,
+    "y": 0,
+    "a": 1
+   },
+   {
+    "name": "cenário",
+    "src": "img/stages/s97_1.png",
+    "w": 512,
+    "h": 163,
+    "par": 1,
+    "loop": false,
+    "spd": 0,
+    "y": 0,
+    "a": 1
+   }
+  ],
+  "floor": 0.9,
+  "bg": null
+ },
+ "99": {
+  "name": "Arena do submundo",
+  "w": 512,
+  "h": 232,
+  "layers": [
+   {
+    "name": "cenário",
+    "src": "img/stages/s99_0.png",
+    "w": 512,
+    "h": 232,
+    "par": 1,
+    "loop": false,
+    "spd": 0,
+    "y": 0,
+    "a": 1
+   }
+  ],
+  "floor": 0.98,
+  "bg": null
+ },
+ "100": {
+  "name": "Estádio",
+  "w": 512,
+  "h": 256,
+  "layers": [
+   {
+    "name": "cenário",
+    "src": "img/stages/s100_0.png",
+    "w": 512,
+    "h": 256,
+    "par": 1,
+    "loop": false,
+    "spd": 0,
+    "y": 0,
+    "a": 1
+   }
+  ],
+  "floor": 0.85,
+  "bg": null
+ },
+ "101": {
+  "name": "Planície",
+  "w": 644,
+  "h": 200,
+  "layers": [
+   {
+    "name": "nuvens",
+    "src": "img/stages/s101_0.png",
+    "w": 330,
+    "h": 36,
+    "par": 0.35,
+    "loop": true,
+    "spd": 6,
+    "y": 16,
+    "a": 1
+   },
+   {
+    "name": "cenário",
+    "src": "img/stages/s101_1.png",
+    "w": 644,
+    "h": 200,
+    "par": 1,
+    "loop": false,
+    "spd": 0,
+    "y": 0,
+    "a": 1
+   }
+  ],
+  "floor": 0.85,
+  "bg": "#30b0e0"
+ },
+ "102": {
+  "name": "Cânion (pôr do sol)",
+  "w": 640,
+  "h": 198,
+  "layers": [
+   {
+    "name": "nuvens",
+    "src": "img/stages/s102_0.png",
+    "w": 300,
+    "h": 38,
+    "par": 0.35,
+    "loop": true,
+    "spd": 6,
+    "y": 18,
+    "a": 1
+   },
+   {
+    "name": "cenário",
+    "src": "img/stages/s102_1.png",
+    "w": 640,
+    "h": 198,
+    "par": 1,
+    "loop": false,
+    "spd": 0,
+    "y": 0,
+    "a": 1
+   }
+  ],
+  "floor": 0.85,
+  "bg": "#a05000"
+ },
+ "103": {
+  "name": "Cânion (noite)",
+  "w": 512,
+  "h": 258,
+  "layers": [
+   {
+    "name": "céu",
+    "src": "img/stages/s103_0.png",
+    "w": 512,
+    "h": 215,
+    "par": 0.3,
+    "loop": true,
+    "spd": 4,
+    "y": 0,
+    "a": 1
+   },
+   {
+    "name": "cenário",
+    "src": "img/stages/s103_1.png",
+    "w": 512,
+    "h": 258,
+    "par": 1,
+    "loop": false,
+    "spd": 0,
+    "y": 0,
+    "a": 1
+   }
+  ],
+  "floor": 0.85,
+  "bg": "#004098"
+ },
+ "104": {
+  "name": "Torneio (dia)",
+  "w": 758,
+  "h": 205,
+  "layers": [
+   {
+    "name": "céu",
+    "src": "img/stages/s104_0.png",
+    "w": 758,
+    "h": 200,
+    "par": 0.2,
+    "loop": true,
+    "spd": 5,
+    "y": 0,
+    "a": 1
+   },
+   {
+    "name": "cenário",
+    "src": "img/stages/s104_1.png",
+    "w": 758,
+    "h": 205,
+    "par": 1,
+    "loop": false,
+    "spd": 0,
+    "y": 0,
+    "a": 1
+   }
+  ],
+  "floor": 0.85,
+  "bg": "#0890c0"
+ },
+ "105": {
+  "name": "Torneio (pôr do sol)",
+  "w": 636,
+  "h": 200,
+  "layers": [
+   {
+    "name": "nuvens",
+    "src": "img/stages/s105_0.png",
+    "w": 300,
+    "h": 32,
+    "par": 0.35,
+    "loop": true,
+    "spd": 5,
+    "y": 8,
+    "a": 1
+   },
+   {
+    "name": "cenário",
+    "src": "img/stages/s105_1.png",
+    "w": 636,
+    "h": 200,
+    "par": 1,
+    "loop": false,
+    "spd": 0,
+    "y": 0,
+    "a": 1
+   }
+  ],
+  "floor": 0.85,
+  "bg": "#d87040"
+ }
+}

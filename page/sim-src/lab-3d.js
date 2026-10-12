@@ -290,22 +290,9 @@ mini.querySelector('.ms').onclick = () => { mst.s = (mst.s + 1) % MS.length; pla
 const SVG = { mini: '<svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="14" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="12" y="10" width="8" height="6" rx="1.2" fill="currentColor"/></svg>', zoom: '<svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M15.2 15.2 21 21M10.5 7.8v5.4M7.8 10.5h5.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>', top: '<svg viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="9" y="8.4" width="6" height="4" rx="1" fill="currentColor"/><path d="M5 15.5h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="1.6 2.2"/></svg>' };
 const tools = document.createElement('div'); tools.className = 'tools3d';
 const LANGQ = (new URLSearchParams(location.search).get('lang') || document.documentElement.lang || 'pt').slice(0, 2);
-const PXT = { pt: ['Fixar o FM-1 e ver em pixel art', 'Soltar o FM-1', 'Experimente em um tablet, iPad ou celular: este botão funciona melhor lá. Ele fixa o FM-1 no centro e você toca nas teclas sem o 3D se mover.'],
-  en: ['Lock the FM-1 and see it in pixel art', 'Unlock the FM-1', 'Try it on a tablet, iPad or phone: this button works best there. It locks the FM-1 in the centre so you can play by touch without the 3D moving.'],
-  es: ['Fijar el FM-1 y verlo en pixel art', 'Soltar el FM-1', 'Pruébalo en una tableta, iPad o móvil: este botón funciona mejor allí. Fija el FM-1 en el centro y tocas las teclas sin que el 3D se mueva.'] }[LANGQ] || null;
-const PXL = PXT || ['Fixar o FM-1 e ver em pixel art', 'Soltar o FM-1', 'Experimente em um tablet, iPad ou celular: este botão funciona melhor lá.'];
-SVG.pix = '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="4" height="4" fill="currentColor"/><rect x="11" y="3" width="4" height="4" fill="currentColor"/><rect x="7" y="7" width="4" height="4" fill="currentColor"/><rect x="15" y="7" width="4" height="4" fill="currentColor"/><rect x="3" y="11" width="4" height="4" fill="currentColor"/><rect x="11" y="11" width="4" height="4" fill="currentColor"/><path d="M13 21v-4a3 3 0 0 1 6 0v4z" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="12" y="19" width="8" height="3" fill="currentColor"/></svg>';
-tools.innerHTML = [['mini', 'miniatura da tela (arraste para onde quiser)'], ['zoom', 'aproximar a tela'], ['top', 'vista de cima']].map(([k, t]) => `<button data-t="${k}" title="${t}">${SVG[k]}</button>`).join('')
-  + `<button data-t="pix" aria-pressed="false" aria-label="${PXL[0]}" aria-describedby="pixtip">${SVG.pix}</button><span id="pixtip" class="pixtip" role="tooltip">${PXL[2]}</span>`; stage.append(tools);
-function setPixLock(on) {
-  st.lock = on; st.pix = on; if (on) { st.top = false; st.zt = 0; st.tx = 0; st.ty = 0; tools.querySelector('[data-t=top]').classList.remove('on'); tools.querySelector('[data-t=zoom]').classList.remove('on'); }
-  if (on) pix.size = Math.max(2, Math.round(sw / 420));
-  try { parent.postMessage({ fm1ga: 'pixel_lock', on: !!on }, location.origin); } catch (e) {}
-  const b = tools.querySelector('[data-t=pix]'); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.setAttribute('aria-label', on ? PXL[1] : PXL[0]); stage.classList.toggle('pix', on);
-}
-G.addEventListener && G.addEventListener('message', e => { const m = e.data || {}; if (m.fm1cmd === 'pixlock') setPixLock(!!m.on); });
+tools.innerHTML = [['mini', 'miniatura da tela (arraste para onde quiser)'], ['zoom', 'aproximar a tela'], ['top', 'vista de cima']].map(([k, t]) => `<button data-t="${k}" title="${t}">${SVG[k]}</button>`).join(''); stage.append(tools);
 function setZoom(on) { st.zt = on ? 1 : 0; tools.querySelector('[data-t=zoom]').classList.toggle('on', on); const z = document.getElementById('s-zoom'); if (z) { z.classList.toggle('on', on); z.textContent = on ? 'ver painel todo' : 'aproximar tela'; } }
-tools.onclick = e => { const b = e.target.closest('button'); if (!b) return; const k = b.dataset.t; if (k === 'mini') setMini(mini.hidden); else if (k === 'zoom') setZoom(!st.zt); else if (k === 'pix') setPixLock(!st.lock); else { st.top = !st.top; b.classList.toggle('on', st.top); } };
+tools.onclick = e => { const b = e.target.closest('button'); if (!b) return; const k = b.dataset.t; if (k === 'mini') setMini(mini.hidden); else if (k === 'zoom') setZoom(!st.zt); else { st.top = !st.top; b.classList.toggle('on', st.top); } };
 
 // ---------------------------------------------------------------- toolbar
 const r1 = host.querySelector('.stool .r1');

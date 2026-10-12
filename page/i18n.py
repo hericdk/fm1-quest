@@ -19,7 +19,7 @@ k("m_log", "Log do erro", "Error log", "Registro del error")
 k("m_thanks", "Agradecimentos", "Thanks", "Agradecimientos")
 k("m_comm", "Obrigado a toda a comunidade do <b>r/MVaveFM1</b>.", "Thank you to the whole <b>r/MVaveFM1</b> community.", "Gracias a toda la comunidad de <b>r/MVaveFM1</b>.")
 k("m_reddit", "r/MVaveFM1 no Reddit", "r/MVaveFM1 on Reddit", "r/MVaveFM1 en Reddit")
-k("m_fw", "E obrigado aos firmwares <b>Felucca</b> e <b>Sloop</b> pela inspiração.", "And thanks to the <b>Felucca</b> and <b>Sloop</b> firmwares for the inspiration.", "Y gracias a los firmwares <b>Felucca</b> y <b>Sloop</b> por la inspiración.")
+k("m_fw", "E obrigado aos firmwares <b>Felucca</b>, <b>Sloop</b> e <b>Baud Girl</b> pela inspiração.", "And thanks to the <b>Felucca</b>, <b>Sloop</b> and <b>Baud Girl</b> firmwares for the inspiration.", "Y gracias a los firmwares <b>Felucca</b>, <b>Sloop</b> y <b>Baud Girl</b> por la inspiración.")
 k("m_baud", "Baud Girl · página oficial", "Baud Girl · official page", "Baud Girl · página oficial")
 k("m_about_h", "Sobre o projeto", "About the project", "Sobre el proyecto")
 k("love_short", "Este é um projeto pessoal, feito com amor e com um único objetivo: testar a tecnologia e explorar todo o potencial de um hardware incrível e acessível. Se você busca um parceiro para projetos de inovação digital e sites, fale comigo pela Raincake.",

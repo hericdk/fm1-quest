@@ -53,7 +53,7 @@ function renderTop() {
   function cell(r, pos, mine) {
     const kind = pos === 1 ? 'gold' : pos === 2 ? 'silver' : pos === 3 ? 'bronze' : 'wood';
     return `<div class="fwcell${mine ? ' me' : ''}"><span class="pos">#${pos}${mine ? ' · ' + A.t('me') : ''}</span>
-      <div class="plq" style="background-image:url(&quot;${A.plaque(kind)}&quot;)">${A.fwLogo(r.id, 26)}</div><span class="num">${r.n} ${A.t('co')}</span></div>`;
+      <div class="plq" style="background-image:url(&quot;${A.plaque(kind)}&quot;)">${A.fwLogo(r.id, 26)}<span class="plqn">${r.n} ${A.t(r.n === 1 ? 'co1' : 'co')}</span></div></div>`;
   }
 }
 

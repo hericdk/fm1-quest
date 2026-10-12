@@ -46,6 +46,7 @@ const D = {
   lb_enter: { pt: 'Entrar', en: 'Join', es: 'Entrar', ja: '入る', ko: '입장' },
   lb_fight: { pt: 'Em luta', en: 'Fighting', es: 'En lucha', ja: '対戦中', ko: '대결 중' },
   lb_none: { pt: 'Nenhuma sala aberta. Toque em <b>Criar sua sala</b> e espere um adversário.', en: 'No open rooms. Press <b>Create your room</b> and wait for an opponent.', es: 'No hay salas abiertas. Pulsa <b>Crear tu sala</b> y espera a un rival.', ja: '開いているルームはありません。<b>ルームを作る</b>を押して待ちましょう。', ko: '열린 룸이 없습니다. <b>룸 만들기</b>를 누르고 기다리세요.' },
+  co1: { pt: 'conexão', en: 'connection', es: 'conexión', ja: '接続', ko: '접속' },
   co: { pt: 'conexões', en: 'connections', es: 'conexiones', ja: '接続', ko: '접속' },
   me: { pt: 'você', en: 'you', es: 'tú', ja: 'あなた', ko: '나' },
   pl_help: { pt: 'O som do seu FM1 sai pelo próprio FM1. O navegador toca só o som do adversário e grava tudo no vídeo. Seus golpes: {c}.', en: 'The sound of your FM1 comes from the FM1 itself. The browser only plays your opponent and records everything for the video. Your hits: {c}.', es: 'El sonido de tu FM1 sale del propio FM1. El navegador solo reproduce al rival y graba todo en el vídeo. Tus golpes: {c}.', ja: 'あなたのFM1の音はFM1本体から出ます。ブラウザは相手の音だけを鳴らし、動画に録音します。操作キャラ: {c}。', ko: '내 FM1의 소리는 FM1에서 나옵니다. 브라우저는 상대의 소리만 재생하고 영상에 함께 녹화합니다. 조작 캐릭터: {c}.' },

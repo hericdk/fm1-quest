@@ -86,7 +86,7 @@ input[type=text]{background:#000;color:var(--txt);border:0;padding:9px 11px;font
 #dev select{background:#000;color:var(--txt);border:2px solid var(--line);font:inherit}
 @media(max-width:700px){#box{width:100%}#top{min-height:76px}}
 
-.plq{width:132px;height:88px;background-size:100% 100%;background-repeat:no-repeat;image-rendering:pixelated;display:grid;place-items:center;padding:6px 10px 18px}
+.plq{width:132px;height:88px;background-size:100% 100%;background-repeat:no-repeat;image-rendering:pixelated;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px 10px 16px}
 .plq .fwlogo{max-width:104px;max-height:34px}
 .plq .fwtxt{font-size:13px}
 #top{min-height:128px}
@@ -108,3 +108,5 @@ input[type=text]{background:#000;color:var(--txt);border:0;padding:9px 11px;font
 #aust{white-space:pre-line}
 
 #trbar{margin-top:10px;display:grid;gap:4px}#trbar b{color:var(--gold);min-width:64px;text-align:right;padding-right:6px}#trbar .btn{padding:8px 12px;font-size:16px}
+
+.plqn{color:#000;font:600 14px/1 "Pixelify Sans",ui-monospace,monospace;text-shadow:1px 1px 0 #ffffff55;white-space:nowrap}

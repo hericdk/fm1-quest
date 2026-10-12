@@ -200,18 +200,12 @@ A.screens.play = async function () {
   const forget = () => { try { localStorage.removeItem('arena.last'); } catch (e) {} };
   const back = () => { forget(); A.net.leave(); if (game) game.destroy(); if (train) train.destroy(); game = train = null; go(mode === 'pvp' ? 'lobby' : 'menu'); };
   const mkBtn = (txt, fn, gold) => { const b = document.createElement('button'); b.className = 'btn' + (gold ? ' gold' : ''); b.textContent = txt; b.onclick = fn; ctl.append(b); return b; };
-  ctl.innerHTML = ''; { const tb0 = $('#trbar'); if (tb0) { tb0.hidden = true; tb0.innerHTML = ''; } }
+  ctl.innerHTML = '';
   const arenaPick = document.createElement('div'); arenaPick.className = 'arenas'; arenaPick.style.maxWidth = '100%';
 
   if (mode === 'train') {
     $('#stagebox').style.background = '#14101a';
     train = new A.Training({ canvas: cv });
-    const tb = $('#trbar'); tb.hidden = false;       // sons e ritmos para não treinar sempre a mesma batida
-    const INST = [['fm1', 'FM1'], ['acid', 'Acid'], ['stab', 'Dub'], ['piano', 'Piano'], ['pad', 'Pad'], ['pluck', 'Pluck']], PAT = [['scale', 'tr_p1'], ['groove', 'tr_p2'], ['arp', 'tr_p3'], ['fast', 'tr_p4']];
-    tb.innerHTML = `<div class="row"><b>${A.t('tr_snd')}</b>${INST.map(([k, l], i) => `<button class="btn${i ? '' : ' flag'}" data-s="${k}">${l}</button>`).join('')}</div>
-      <div class="row"><b>${A.t('tr_pat')}</b>${PAT.map(([k, l], i) => `<button class="btn${i ? '' : ' flag'}" data-p="${k}">${A.t(l)}</button>`).join('')}</div>`;
-    $$('#trbar [data-s]').forEach(b => b.onclick = () => { A.synth.init(); train.setInst(b.dataset.s); $$('#trbar [data-s]').forEach(x => x.classList.toggle('flag', x === b)); });
-    $$('#trbar [data-p]').forEach(b => b.onclick = () => { train.setPattern(b.dataset.p); $$('#trbar [data-p]').forEach(x => x.classList.toggle('flag', x === b)); });
     help.innerHTML = A.t('tr_help'); 
     mkBtn(A.t('r_back'), back);
     return;

@@ -70,6 +70,14 @@ def main(out, pkg, version):
     for d in ("assets", "media", "arena"):
         shutil.rmtree(out / d, ignore_errors=True)
         shutil.copytree(HERE / d, out / d)
+    av = hashlib.sha256()                                         # the arena's scripts and styles are versioned by content (Pages caches for 10 minutes)
+    for f in sorted((out / "arena").rglob("*")):
+        if f.is_file():
+            av.update(f.name.encode() + f.read_bytes())
+    arenav = av.hexdigest()[:10]
+    aix = (out / "arena" / "index.html").read_text(encoding="utf-8")
+    aix = re.sub(r'(src|href)="((?:vendor/)?[\w.]+\.(?:js|css))"', lambda mm: f'{mm.group(1)}="{mm.group(2)}?v={arenav}"', aix)
+    (out / "arena" / "index.html").write_text(aix, encoding="utf-8")
     for f in ("favicon.ico", "favicon-32.png", "apple-touch-icon.png", "android-chrome-192.png", "android-chrome-512.png"):
         shutil.copy(HERE / f, out / f)
     simv = build_sim(out)
@@ -133,6 +141,7 @@ def main(out, pkg, version):
             html = re.sub(r'(src|href)="(assets|editor|firmware|media|arena)/', lambda mm: f'{mm.group(1)}="../{mm.group(2)}/', html)
             html = html.replace("url(assets/", "url(../assets/").replace('"sim/index.html?embed=1', '"../sim/index.html?embed=1')
         html = html.replace("sim/index.html?embed=1", "sim/index.html?embed=1&v=" + simv)
+        html = html.replace('arena/banner.js"', 'arena/banner.js?v=' + arenav + '"')
         html = html.replace("__BUILD__", simv).replace("__BUILDURL__", P + "build.json")
         d = out / path
         d.mkdir(parents=True, exist_ok=True)

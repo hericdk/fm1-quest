@@ -429,19 +429,23 @@ class Training {
     this.o = o; this.bars = []; this.hits = 0; this.miss = 0; this.dmg = 0; this.flash = 0; this.shake = 0; this.txt = []; this.speed = 80;
     this.keys = kbLayout(); this.lit = {};
     // sequência em números de tecla (1..27): sobe e desce pela escala, com pretas no meio
-    this.PATS = {   // ritmos para treinar: números de tecla, andamento e subdivisão (2 = colcheias, 4 = semicolcheias)
-      scale: { bpm: 96, div: 2, seq: [8, 10, 12, 13, 15, 17, 19, 20, 19, 17, 15, 13, 12, 10, 8, 9, 11, 14, 16, 18, 16, 14, 11, 9] },
+    // sequências de teclas (0 = pausa). A primeira é a linha do baixo da banda das lutas (A, A, G, E); as outras variam o desenho e o andamento.
+    const A_ = [5, 0, 8, 0, 12, 0, 8, 10, 5, 0, 15, 0, 12, 0, 8, 0], G_ = A_.map(k => k ? k - 2 : 0), E_ = A_.map(k => k ? k + 7 : 0);
+    this.PATS = {
+      banda: { bpm: 110, div: 4, seq: [].concat(A_, A_, G_, E_) },
+      escala: { bpm: 96, div: 2, seq: [8, 10, 12, 13, 15, 17, 19, 20, 19, 17, 15, 13, 12, 10, 8, 9, 11, 14, 16, 18, 16, 14, 11, 9] },
       groove: { bpm: 108, div: 2, seq: [8, 8, 12, 8, 15, 8, 12, 10, 8, 8, 13, 8, 17, 8, 13, 12] },
-      arp: { bpm: 100, div: 4, seq: [8, 12, 15, 20, 15, 12, 8, 12, 10, 13, 17, 22, 17, 13, 10, 13] },
-      fast: { bpm: 128, div: 2, seq: [20, 17, 15, 12, 8, 12, 15, 17, 22, 19, 17, 14, 10, 14, 17, 19, 8, 20, 8, 20] },
+      arpejo: { bpm: 100, div: 4, seq: [8, 12, 15, 20, 15, 12, 8, 12, 10, 13, 17, 22, 17, 13, 10, 13] },
+      rapido: { bpm: 128, div: 2, seq: [20, 17, 15, 12, 8, 12, 15, 17, 22, 19, 17, 14, 10, 14, 17, 19, 8, 20, 8, 20] },
     };
-    this.setPattern('scale'); this.inst = 'fm1';
+    this.order = ['banda', 'escala', 'groove', 'arpejo', 'rapido']; this.oi = 0;      // troca de sequência sozinha ao fim de cada volta
+    this.setPattern(this.order[0]); this.inst = 'fm1';
     this.next = performance.now() + 800; this.dummyT = 0; this.alive = true; this.combo = 0;
     this.un = A.on('note', (e) => e.on && this.press(e));
     this.raf = requestAnimationFrame((t) => this.loop(t)); this.last = performance.now();
   }
   destroy() { this.alive = false; cancelAnimationFrame(this.raf); this.un(); }
-  setPattern(name) { const p = this.PATS[name] || this.PATS.scale; this.patName = name; this.pat = p.seq.map(n => n - 1); this.pi = 0; this.bpm = p.bpm; this.div = p.div; this.bars.length = 0; this.next = performance.now() + 600; }
+  setPattern(name) { const p = this.PATS[name] || this.PATS.escala; this.patName = name; this.pat = p.seq; this.pi = 0; this.bpm = p.bpm; this.div = p.div; this.bars.length = 0; this.next = performance.now() + 600; }
   setInst(name) { this.inst = name; }
   press(e) {
     if (this.inst === 'fm1') A.synth.note(e.n, e.v, e.ch, true); else A.synth.inst(this.inst, e.n, e.v);
@@ -456,7 +460,12 @@ class Training {
   }
   loop(now) {
     if (!this.alive) return; const dt = Math.min(.05, (now - this.last) / 1000); this.last = now;
-    if (now > this.next) { this.bars.push({ k: this.pat[this.pi++ % this.pat.length], y: -10 }); this.next = now + 60000 / this.bpm / this.div; }
+    if (now > this.next) {
+      const k = this.pat[this.pi++];
+      if (k) this.bars.push({ k: k - 1, y: -10 });
+      this.next = now + 60000 / this.bpm / this.div;
+      if (this.pi >= this.pat.length) { this.oi = (this.oi + 1) % this.order.length; const nx = this.PATS[this.order[this.oi]]; this.patName = this.order[this.oi]; this.pat = nx.seq; this.pi = 0; this.bpm = nx.bpm; this.div = nx.div; }
+    }
     const bottom = VH - 40;
     for (const b of this.bars) { b.y += this.speed * dt; if (!b.done && b.y > bottom) { b.done = 1; this.miss++; this.combo = 0; this.txt.push({ t: 0, s: 'MISS', c: '#f66', x: 20 + b.k * 13 }); } }
     this.bars = this.bars.filter(b => b.y < VH + 10 && !(b.done && b.y > bottom - 10)); this.txt.forEach(t => t.t += dt); this.txt = this.txt.filter(t => t.t < .8);

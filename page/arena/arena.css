@@ -106,3 +106,5 @@ input[type=text]{background:#000;color:var(--txt);border:0;padding:9px 11px;font
 @keyframes flagwave{from{background-position:0 0,0 0}to{background-position:56px 0,0 12px}}
 
 #aust{white-space:pre-line}
+
+#trbar{margin-top:10px;display:grid;gap:4px}#trbar b{color:var(--gold);min-width:64px;text-align:right;padding-right:6px}#trbar .btn{padding:8px 12px;font-size:16px}

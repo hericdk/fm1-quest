@@ -190,6 +190,22 @@ S.stab = (root, ints) => { if (!S.ctx) return; const c = S.ctx, t = c.currentTim
   g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(.11, t + .01); g.gain.exponentialRampToValueAtTime(.001, t + .34);
   (ints || [0, 3, 7]).forEach((k, i) => { [0, 4].forEach((det) => { const o = c.createOscillator(); o.type = 'square'; o.frequency.value = root * Math.pow(2, k / 12) * (1 + det * .0007); o.connect(f); o.start(t); o.stop(t + .38); }); });
   f.connect(g); outn(g); };
+/* instrumentos para o treino (botões): tocam no navegador, nos alto-falantes e na gravação */
+S.inst = function (name, n, v) {
+  if (!S.ctx) return; const c = S.ctx, t = c.currentTime, f = 440 * Math.pow(2, (n - 69) / 12), g = c.createGain(), vel = .6 + (v || 90) / 127 * .5;
+  const osc = (type, fr, det) => { const o = c.createOscillator(); o.type = type; o.frequency.value = fr; if (det) o.detune.value = det; return o; };
+  if (name === 'acid') { S.acid(f / 2, (v || 90) > 100, .22); return; }
+  if (name === 'stab') { S.stab(f / 2, [0, 3, 7]); return; }
+  let dur = .6;
+  const lp = c.createBiquadFilter(); lp.type = 'lowpass';
+  if (name === 'piano') { lp.frequency.value = 3200; g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(.22 * vel, t + .004); g.gain.exponentialRampToValueAtTime(.001, t + 1.1); dur = 1.15;
+    [[osc('triangle', f), 1], [osc('sine', f * 2), .35], [osc('sine', f * 3), .15]].forEach(([o, a]) => { const gg = c.createGain(); gg.gain.value = a; o.connect(gg); gg.connect(lp); o.start(t); o.stop(t + dur); }); }
+  else if (name === 'pad') { lp.frequency.value = 1500; g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(.12 * vel, t + .35); g.gain.exponentialRampToValueAtTime(.001, t + 1.6); dur = 1.7;
+    [-9, 0, 9].forEach(d => { const o = osc('sawtooth', f, d); o.connect(lp); o.start(t); o.stop(t + dur); }); }
+  else { lp.frequency.setValueAtTime(3500, t); lp.frequency.exponentialRampToValueAtTime(500, t + .25); g.gain.setValueAtTime(.0001, t); g.gain.linearRampToValueAtTime(.2 * vel, t + .004); g.gain.exponentialRampToValueAtTime(.001, t + .42); dur = .45;   // pluck
+    [osc('sawtooth', f), osc('square', f, 6)].forEach(o => { o.connect(lp); o.start(t); o.stop(t + dur); }); }
+  lp.connect(g); outn(g);
+};
 S.hit = (big) => S.noise(big ? .35 : .12, big ? .5 : .25, big ? 200 : 900);
 
 /* ---------- ranking: começa em zero; só conta quem entra numa luta Player vs Player com um FM1 conectado ---------- */

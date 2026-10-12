@@ -61,3 +61,12 @@
   .tl-tabs { margin-left: 2px; }
 }
 @media (min-width: 761px) and (max-width: 1000px) { .tl-tab { font-size: 12px; padding: 10px 4px 8px; } .tl-tab small { display: none; } }
+
+/* loading animation: four pixel squares chasing each other until the clip is playing */
+.tl-load { position: absolute; inset: 0; display: none; place-items: center; background: rgba(6,6,12,.78); z-index: 3; }
+.tl-lcd.loading .tl-load { display: grid; }
+.tl-load { grid-template-columns: repeat(2, 14px); grid-auto-rows: 14px; gap: 6px; align-content: center; justify-content: center; }
+.tl-load i { background: #f0c860; opacity: .25; animation: tlld 1s steps(1) infinite; }
+.tl-load i:nth-child(2) { animation-delay: .25s; } .tl-load i:nth-child(4) { animation-delay: .5s; } .tl-load i:nth-child(3) { animation-delay: .75s; }
+@keyframes tlld { 0% { opacity: 1; } 25% { opacity: .25; } }
+@media (prefers-reduced-motion: reduce) { .tl-load i { animation: none; opacity: .7; } }

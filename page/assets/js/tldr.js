@@ -153,9 +153,24 @@
     });
   }
   function media(name) { return B + "media/" + name + ".mp4"; }
+  var warmed = {};
+  function warm(ci) {                                    /* fetch the clips of a category into the cache (low priority) before they are asked for */
+    C[ci][4].forEach(function (it) { it[6].forEach(function (x) { if (!warmed[x[0]]) { warmed[x[0]] = 1; try { fetch(media(x[0]), { priority: "low" }).catch(function () {}); } catch (e) {} } }); });
+  }
+  if ("IntersectionObserver" in window) { var wio = new IntersectionObserver(function (es) { if (es[0].isIntersecting) { warm(cat); wio.disconnect(); } }, { rootMargin: "700px 0px" }); wio.observe(root); } else warm(cat);
+  var lcd = root.querySelector(".tl-lcd"), spin = el("div", "tl-load", "<i></i><i></i><i></i><i></i>"); lcd.append(spin);
+  vid.addEventListener("playing", function () { lcd.classList.remove("loading"); });
+  vid.addEventListener("waiting", function () { lcd.classList.add("loading"); });
   function show() {
     var it = C[cat][4][item], s = it[6][scr];
-    [vid].forEach(function (v) { if (v.dataset.n !== s[0]) { v.dataset.n = s[0]; v.src = media(s[0]); if (window.__vidWatch) window.__vidWatch(v); else v.play().catch(function () {}); } });
+    [vid].forEach(function (v) {
+      if (v.dataset.n !== s[0]) {
+        v.dataset.n = s[0]; lcd.classList.add("loading"); v.src = media(s[0]);
+        if (window.__vidWatch) window.__vidWatch(v);
+        var p = v.play(); if (p && p.catch) p.catch(function () {});
+      }
+    });
+    if (vid.paused && !document.hidden) { var pp = vid.play(); if (pp && pp.catch) pp.catch(function () {}); }
     cap.textContent = s[1] ? s[1] : ""; cap.hidden = !s[1];
     paintHow(s);
     list.querySelectorAll("li").forEach(function (li, i) { li.classList.toggle("on", i === item); });
@@ -184,7 +199,7 @@
   };
   C.forEach(function (c, i) {
     var b = el("button", "tl-tab", '<span class="ti">' + (ICON[c[0]] || "") + '</span><span class="tx">' + c[1 + idx] + '</span> <small>(' + c[4].length + ')</small>'); b.type = "button"; b.setAttribute("role", "tab"); b.setAttribute("aria-label", c[1 + idx]); b.title = c[1 + idx];
-    b.onclick = function () { click(); cat = i; item = 0; scr = 0; tabs.querySelectorAll(".tl-tab").forEach(function (x, k) { x.classList.toggle("on", k === i); x.setAttribute("aria-selected", k === i); }); build(); };
+    b.onclick = function () { click(); cat = i; item = 0; scr = 0; warm(i); tabs.querySelectorAll(".tl-tab").forEach(function (x, k) { x.classList.toggle("on", k === i); x.setAttribute("aria-selected", k === i); }); build(); };
     tabs.append(b);
   });
   tabs.firstChild.click();

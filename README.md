@@ -103,7 +103,7 @@ delete them. I only ask you to **give credit, citing the project and its URL**: 
 
 ## Privacy
 
-The page at fm1.quest counts visits and clicks with Google Analytics (installer buttons and links to YouTube, Instagram, Raincake, GitHub and Reddit). Cookies are only set after you press *Accept* in the banner; nothing from your FM-1, your files or your projects is ever sent: the installer and the editor run entirely in your browser.
+The page at fm1.quest counts visits and clicks with Google Analytics (installer buttons and links to YouTube, Instagram, GitHub and Reddit). Cookies are only set after you press *Accept* in the banner; nothing from your FM-1, your files or your projects is ever sent: the installer and the editor run entirely in your browser.
 
 ## Contact
 

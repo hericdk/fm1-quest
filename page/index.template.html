@@ -295,7 +295,6 @@
   </div>
   <h3 data-i="m_about_h"></h3>
   <p data-i="love_short"></p>
-  <div class="ext"><a class="rc" href="https://raincake.com.br" target="_blank" rel="noopener">raincake.com.br</a></div>
   <p class="grey" style="margin-top:22px" data-i="ai"></p>
 </aside>
 
@@ -783,7 +782,7 @@ document.addEventListener("click", (e) => {
   if (!/^https?:$/.test(u.protocol)) return;
   if (u.host !== location.host) {
     const h = u.hostname.replace(/^www\./, "");
-    const who = /youtube\.com|youtu\.be/.test(h) ? "youtube" : /instagram\.com/.test(h) ? "instagram" : /raincake\.com\.br/.test(h) ? "raincake" : /github\.com/.test(h) ? "github" : /reddit\.com/.test(h) ? "reddit" : "other";
+    const who = /youtube\.com|youtu\.be/.test(h) ? "youtube" : /instagram\.com/.test(h) ? "instagram" : /github\.com/.test(h) ? "github" : /reddit\.com/.test(h) ? "reddit" : "other";
     ga("external_link", { target: who, link_domain: h, link_url: u.href.slice(0, 100) });
   } else if (/\/editor\/?$/.test(u.pathname)) ga("editor_open");
 }, true);

@@ -9,14 +9,15 @@
  * token bucket of LCD SPI bytes (12 MHz bus): ~16 fps while the transport plays, a slow ambient tick otherwise, and
  * a due frame that does not fit the budget is dropped, never queued. */
 enum { QSN_NONE, QSN_PARTY, QSN_BOSS, QSN_DUEL, QSN_REC, QSN_COUNT, QSN_DUNGEON, QSN_KIT, QSN_SPELLS, QSN_BANISH, QSN_BIOME, QSN_CAMP, QSN_PADS,
-       QSN_WEATHER, QSN_EQUIP, QSN_INN, QSN_IMP, QSN_PTY, QSN_STAT, QSN_ABOUT, QSN_PAGE0, QSN_VIZ = QSN_PAGE0 + 16, QSN_GAME, QSN_TOWN, QSN_SONG, QSN_HOLD };
+       QSN_WEATHER, QSN_EQUIP, QSN_INN, QSN_IMP, QSN_PTY, QSN_STAT, QSN_ABOUT, QSN_PAGE0, QSN_VIZ = QSN_PAGE0 + 16, QSN_GAME, QSN_TOWN, QSN_SONG, QSN_HOLD, QSN_CAVE };
 #define Q_SPI_BPMS 1500                     /* LCD SPI at 12 MHz: bytes per millisecond */
 static struct { int32_t tokens; uint32_t tok_ms; uint8_t fresh; } qb;
 static void quest_town_draw(void);                 /* ui_quest_town.c */
+static void quest_flight_draw(void);               /* ui_quest_flight.c */
 static void q_rec_screen(void);
 static void q_boss_first(void), q_scene_boss2(void), q_scene_camp2(void), q_rhythm_rows(int32_t y0, uint32_t slot, uint32_t thin);     /* ui_quest_boss.c */
 
-static UI_NOINLINE void q_enter(uint8_t id)
+static UI_SMALL void q_enter(uint8_t id)
 {
     uint32_t i;
     if (qs.screen == id) return;
@@ -28,13 +29,13 @@ static UI_NOINLINE void q_enter(uint8_t id)
     if (id != QSN_DUEL) qs.combo = 0;
 }
 #define Q_FULL (ui.force || qb.fresh)
-static UI_NOINLINE int q_changed(uint32_t slot, uint32_t sig)       /* the element's signature: draw it again when it moved */
+static UI_SMALL int q_changed(uint32_t slot, uint32_t sig)       /* the element's signature: draw it again when it moved */
 {
     if (!Q_FULL && qs.sig[slot] == sig) return 0;
     qs.sig[slot] = sig;
     return 1;
 }
-static UI_NOINLINE int q_scene_budget(int32_t cost)                 /* the scene, paced: 1 = draw it now */
+static UI_SMALL int q_scene_budget(int32_t cost)                 /* the scene, paced: 1 = draw it now */
 {
     uint32_t now = fm1_ms, dt = qb.tok_ms ? now - qb.tok_ms : 0u, share = 55u, period = 62u;                         /* the same pace playing or not */
     if (dt > 250u) dt = 250u;
@@ -48,10 +49,10 @@ static UI_NOINLINE int q_scene_budget(int32_t cost)                 /* the scene
     qb.tokens -= cost;
     return 1;
 }
-static UI_NOINLINE void q_clocks_and_overlay_done(void) { qb.fresh = 0; }
+static UI_SMALL void q_clocks_and_overlay_done(void) { qb.fresh = 0; }
 
 /* ---- the bar ---- */
-static UI_NOINLINE void q_bar_end(void)
+static UI_SMALL void q_bar_end(void)
 {
     if (ui.msg_t) {                                     /* a message takes the right half of the bar (the firmware's head does the same) */
         cv_rect(100, 0, 140, 18, Q_BG);
@@ -60,15 +61,15 @@ static UI_NOINLINE void q_bar_end(void)
     cv_rect(0, 18, 240, 1, Q_LINE);
     cv_blit(0, 0);
 }
-static UI_NOINLINE uint32_t q_msg_sig(void) { return ui.msg_t ? str_hash(7u, ui.msg) : 0u; }
-static UI_NOINLINE void q_bar_right_play(void)                       /* play triangle + bpm on the right */
+static UI_SMALL uint32_t q_msg_sig(void) { return ui.msg_t ? str_hash(7u, ui.msg) : 0u; }
+static UI_SMALL void q_bar_right_play(void)                       /* play triangle + bpm on the right */
 {
     char b[8];
     fmt_int(b, song.g[G_BPM]);
     q_text_r(234, 4, b, ui.bpm_t ? Q_HI : Q_TEXT);
     if (song.playing) q_tri(234 - text_w(&FONT_P, b) - 10, 6, Q_TEXT);
 }
-static UI_NOINLINE void q_bar_bpm_pos(int rec_pips)                  /* the status bar of PARTY / BOSS: bpm, play, bar.beat, the four beats */
+static UI_SMALL void q_bar_bpm_pos(int rec_pips)                  /* the status bar of PARTY / BOSS: bpm, play, bar.beat, the four beats */
 {
     char b[16];
     uint32_t playing = song.playing, beat = clk_beat, k;
@@ -90,7 +91,7 @@ static UI_NOINLINE void q_bar_bpm_pos(int rec_pips)                  /* the stat
 }
 
 /* ---- the four dials of the HUD (KNOB 1..4): a knob, a label, a value; an empty label = an empty column ---- */
-static UI_NOINLINE void q_dials(const char *const lab[4], const char *const val[4], const int32_t ratio[4], uint32_t slot, uint32_t sigbase)
+static UI_SMALL void q_dials(const char *const lab[4], const char *const val[4], const int32_t ratio[4], uint32_t slot, uint32_t sigbase)
 {
     uint32_t k, sig = sigbase, pi, np = 0, cur = 0;
     if (!ui.home && ui.menu == 0u)                       /* how many pages this button holds, and which one is open */
@@ -115,7 +116,7 @@ static UI_NOINLINE void q_dials(const char *const lab[4], const char *const val[
 
 /* ---- a tile of a layer screen as the firmware computed it (colours are its TE_* constants): looked up by value ---- */
 typedef struct { uint16_t bg, fg, top; } q_look_t;
-static UI_NOINLINE q_look_t q_tile_look(const tile_t *t)
+static UI_SMALL q_look_t q_tile_look(const tile_t *t)
 {
     q_look_t o;
     uint32_t k;
@@ -136,7 +137,7 @@ static UI_NOINLINE q_look_t q_tile_look(const tile_t *t)
     }
     return o;
 }
-static UI_NOINLINE void q_pad(int32_t x, int32_t y, int32_t w, int32_t h, const char *lab, uint16_t bg, uint16_t fg, uint16_t bd, uint16_t top, int has_top)
+static UI_SMALL void q_pad(int32_t x, int32_t y, int32_t w, int32_t h, const char *lab, uint16_t bg, uint16_t fg, uint16_t bd, uint16_t top, int has_top)
 {
     int32_t tw;
     cv_rect(x, y, w, h, bd);
@@ -150,7 +151,7 @@ static UI_NOINLINE void q_pad(int32_t x, int32_t y, int32_t w, int32_t h, const 
         cv_text(x + (w - text_w(&FONT_P, b)) / 2, y + h / 2 - 7, &FONT_P, b, fg);
     } else cv_text(x + (w - tw) / 2, y + h / 2 - 7, &FONT_P, lab, fg);
 }
-static UI_NOINLINE uint32_t q_tiles_sig(const tile_t *tl, uint32_t n)
+static UI_SMALL uint32_t q_tiles_sig(const tile_t *tl, uint32_t n)
 {
     uint32_t i, sig = 7u;
     for (i = 0; i < n; i++) sig = studio_hash(sig * 31u + tl[i].bg * 3u + tl[i].fg * 5u + tl[i].top * 7u + tl[i].marks, tl[i].lab);
@@ -158,7 +159,7 @@ static UI_NOINLINE uint32_t q_tiles_sig(const tile_t *tl, uint32_t n)
 }
 
 /* ---- PARTY ---- */
-static UI_NOINLINE void q_portrait(int32_t x, int32_t y, uint32_t t, uint16_t border, int dead)
+static UI_SMALL void q_portrait(int32_t x, int32_t y, uint32_t t, uint16_t border, int dead)
 {
     cv_rect(x, y, 17, 17, border);
     cv_rect(x + 1, y + 1, 15, 15, Q_OFFHI);
@@ -184,7 +185,7 @@ static UI_NOINLINE void q_portrait(int32_t x, int32_t y, uint32_t t, uint16_t bo
 }
 static const uint16_t Q_SELBG[4] = {RGB(0x16, 0x1e, 0x36), RGB(0x1c, 0x2c, 0x14), RGB(0x3a, 0x30, 0x10), RGB(0x3a, 0x24, 0x10)};   /* the active hero's row */
 #define Q_SPCOL RGB(0x4a, 0xa8, 0xe8)
-static UI_NOINLINE void q_row(uint32_t i, int32_t y)
+static UI_SMALL void q_row(uint32_t i, int32_t y)
 {
     track_t *t = &trk[i];
     char nm[16], b[12];
@@ -237,7 +238,7 @@ static UI_NOINLINE void q_row(uint32_t i, int32_t y)
     }
     cv_blit(0, y);
 }
-static UI_NOINLINE void q_party_dials(void)      /* swing, level, steps, pan of the selected track (the firmware's own dials) */
+static UI_SMALL void q_party_dials(void)      /* swing, level, steps, pan of the selected track (the firmware's own dials) */
 {
     track_t *t = TSEL;
     static char v[4][8];
@@ -255,7 +256,7 @@ static UI_NOINLINE void q_party_dials(void)      /* swing, level, steps, pan of 
     ratio[3] = (t->p[P_PAN] + 64) * 1000 / 127;
     q_dials(lab, val, ratio, 12, song.sel * 17u);
 }
-static UI_NOINLINE void q_party_screen(void)
+static UI_SMALL void q_party_screen(void)
 {
     uint32_t i;
     char b[8];
@@ -267,7 +268,7 @@ static UI_NOINLINE void q_party_screen(void)
         cv_begin(240, 19, Q_BG);
         q_bar_bpm_pos(0);
         q_title_r(236, "Party", Q_HI);
-        q_homedots(150, 3, 1);
+        q_homedots(150, 4, 2);
         q_bar_end();
     }
     for (i = 0; i < NTRK; i++) q_row((i + 3u) % NTRK, 108 + (int32_t)i * 20);          /* knight, elf (mage), archer, cleric */
@@ -288,12 +289,12 @@ static UI_NOINLINE void q_party_screen(void)
 }
 
 /* ---- BOSS: REC armed on a playing loop (README: recording a loop is a fight) or a free take ---- */
-static UI_NOINLINE void q_title_outline(int32_t x, const char *s)
+static UI_SMALL void q_title_outline(int32_t x, const char *s)
 {
     cv_text(x - 1, -1 + 3, &FONT_QT, s, Q_BG), cv_text(x + 1, -1 + 3, &FONT_QT, s, Q_BG), cv_text(x, -2 + 3, &FONT_QT, s, Q_BG), cv_text(x, 3, &FONT_QT, s, Q_BG);
     cv_text(x, 2, &FONT_QT, s, Q_TEXT);
 }
-static UI_NOINLINE void q_boss_screen(void)
+static UI_SMALL void q_boss_screen(void)
 {
     q_boss_first();                                          /* the first time ever: the mage's ult is half charged, the rest start at zero */
     q_enter(QSN_BOSS);
@@ -301,7 +302,7 @@ static UI_NOINLINE void q_boss_screen(void)
         cv_begin(240, 19, Q_BG);
         q_bar_bpm_pos(1);
         q_title_r(236, (song.rec || ft_on) ? "Rec" : "Boss", (song.rec || ft_on) ? Q_REC : Q_HI);
-        q_homedots(150, 3, 2);
+        q_homedots(150, 4, 3);
         q_bar_end();
     }
     q_rhythm_rows(176, 1, 1);                                /* the rhythm bars, thin: the boss and his castle get the room */
@@ -309,7 +310,7 @@ static UI_NOINLINE void q_boss_screen(void)
     if (q_scene_budget(240 * 156 * 2)) q_scene_boss2();
 }
 
-static UI_NOINLINE void q_rec_picture(void)                 /* the CRT campfire (assets/quest/rec-crt.png), 120 wide drawn doubled, in the filter's colours: a range-coded stream decoded as it is drawn */
+static UI_SMALL void q_rec_picture(void)                 /* the CRT campfire (assets/quest/rec-crt.png), 120 wide drawn doubled, in the filter's colours: a range-coded stream decoded as it is drawn */
 {
     static uint16_t pr[QREC_N * QREC_N * QREC_N];
     static uint8_t row[2][QREC_W];
@@ -375,7 +376,7 @@ static UI_NOINLINE void q_rec_picture(void)                 /* the CRT campfire 
     }
 }
 static void q_rec_list(uint32_t rt, int32_t y0, uint32_t slot);
-static UI_NOINLINE void q_rec_screen(void)                 /* a loop is being recorded: the camp picture, the one list of the four heroes (the one that records outlined), the dials */
+static UI_SMALL void q_rec_screen(void)                 /* a loop is being recorded: the camp picture, the one list of the four heroes (the one that records outlined), the dials */
 {
     q_enter(QSN_REC);
     if (q_changed(0, studio_hash((uint32_t)song.g[G_BPM] * 7u + (clk_beat % 4u) * 131u + (clk_beat / 4u) * 7919u + q_msg_sig() + (song.rec != 0u), "campfire"))) {
@@ -393,18 +394,19 @@ static UI_NOINLINE void q_rec_screen(void)                 /* a loop is being re
 }
 
 /* ---- the tracks screen of SLOOP is PARTY, BOSS or DUEL ---- */
-static UI_NOINLINE void quest_tracks_draw(void)
+static UI_SMALL void quest_tracks_draw(void)
 {
     q_tick_clocks();
     if (ft_on || (song.rec && song.playing)) q_rec_screen();                          /* recording: the camp */
     else if (q_town == 2u) q_boss_screen();                                           /* the third home: the boss */
+    else if (q_town == 3u) quest_flight_draw();         /* the flight: the second home (HOME again: village -> flight -> party -> boss) */
     else if (q_town == 0u) quest_town_draw();           /* the first home: the village */
     else q_party_screen();
     qb.fresh = 0;
 }
 
 /* ---- REC READY / COUNT-IN (the firmware's rec_screen_draw; a free take is the boss) ---- */
-static UI_NOINLINE void q_rec_list(uint32_t rt, int32_t y0, uint32_t slot)       /* the one list of the heroes: 16 cells each, what is saved in them, the selected one outlined, the playhead lit */
+static UI_SMALL void q_rec_list(uint32_t rt, int32_t y0, uint32_t slot)       /* the one list of the heroes: 16 cells each, what is saved in them, the selected one outlined, the playhead lit */
 {
     uint32_t i, j, sig = rt * 3u + rec_wait + drum_kit() * 977u + (uint32_t)song.playing * 5u;
     for (i = 0; i < NTRK; i++) {
@@ -428,7 +430,7 @@ static UI_NOINLINE void q_rec_list(uint32_t rt, int32_t y0, uint32_t slot)      
     }
     cv_blit(0, (uint32_t)y0);
 }
-static UI_NOINLINE void quest_rec_draw(void)
+static UI_SMALL void quest_rec_draw(void)
 {
     uint32_t count = ci_on, take = ft_on, empty = project_empty(), free_ = empty && !rec_tempo, rt = song.sel, i;
     q_tick_clocks();
@@ -481,7 +483,7 @@ static UI_NOINLINE void quest_rec_draw(void)
 }
 
 /* ---- DUNGEON / KIT (the drum track's two pages) ---- */
-static UI_NOINLINE void quest_drum_draw(void)
+static UI_SMALL void quest_drum_draw(void)
 {
     uint32_t i, j, len = (uint32_t)clamp(TDRUM->p[P_SLEN], 1, 64), kit = drum_kit(), bank, lit = 0, sig;
     char b[16];
@@ -563,7 +565,7 @@ static UI_NOINLINE void quest_drum_draw(void)
 }
 
 /* ---- the layers: SPELLS (FX), BANISH (EDIT), BIOME (SCL), CAMP (GLO); the rest get a plain pad screen ---- */
-static UI_NOINLINE void quest_layer_draw(uint32_t layer, const char *sub, const tile_t *tl, const char *const lab[4], const char *const val[4], const int32_t ratio[4])
+static UI_SMALL void quest_layer_draw(uint32_t layer, const char *sub, const tile_t *tl, const char *const lab[4], const char *const val[4], const int32_t ratio[4])
 {
     static const char *const NAME[8] = {"", "Spells", "Banish", "Roll", "Steps", "Biome", "Camp", "Song"};
     uint32_t id = layer == LY_FX ? QSN_SPELLS : layer == LY_ERASE ? QSN_BANISH : layer == LY_SCALE ? QSN_BIOME : layer == LY_MIX ? QSN_CAMP : QSN_PADS, i, pads_y, ph, pitch;
@@ -649,7 +651,7 @@ static UI_NOINLINE void quest_layer_draw(uint32_t layer, const char *sub, const 
 }
 
 /* ---- INN: the menu (HOME held). ABOUT keeps the firmware's own page. ---- */
-static UI_NOINLINE void quest_menu_draw(void)
+static UI_SMALL void quest_menu_draw(void)
 {
     uint32_t i, sig = ui.menu_sel * 131u + settings.palette * 1009u + settings.lowcut * 7919u + usb_full * 49979687u + boot_mute * 104729u + q_ult_simple * 1299709u + settings.zoom * 15485863u + q_ult_fullscr * 15485863u;
     q_tick_clocks();
@@ -670,7 +672,7 @@ static UI_NOINLINE void quest_menu_draw(void)
             int32_t y = 4 + (int32_t)(i - top) * 16;
             int sel = i == ui.menu_sel;
             const char *val = "";
-            if (i == MI_LOWCUT) val = settings.lowcut ? "ON" : "OFF"; else if (i == MI_USB) val = usb_full ? "FULL" : "MASTER"; else if (i == MI_BOOT) val = boot_mute ? "OFF" : "ON"; else if (i == MI_DENS) val = Q_OPT_DENS() == 0u ? "FEW" : Q_OPT_DENS() == 1u ? "NORMAL" : "MANY"; else if (i == MI_DMG) val = Q_OPT_DMG() ? "ON" : "OFF"; else if (i == MI_BSPD) val = Q_OPT_BSPD() == 0u ? "SLOW" : Q_OPT_BSPD() == 1u ? "NORMAL" : "FAST"; else if (i == MI_ULT) val = q_ult_simple ? "OFF" : q_ult_fullscr ? "FULLSCREEN" : "SIDE";
+            if (i == MI_LOWCUT) val = settings.lowcut ? "ON" : "OFF"; else if (i == MI_USB) val = usb_full ? "FULL" : "MASTER"; else if (i == MI_BOOT) val = boot_mute ? "OFF" : "ON"; else if (i == MI_DENS) val = Q_OPT_DENS() == 0u ? "FEW" : Q_OPT_DENS() == 1u ? "NORMAL" : "MANY"; else if (i == MI_DMG) val = Q_OPT_DMG() ? "ON" : "OFF"; else if (i == MI_BSPD) val = Q_OPT_BSPD() == 0u ? "SLOW" : Q_OPT_BSPD() == 1u ? "NORMAL" : "FAST"; else if (i == MI_ULT) val = q_ult_simple ? "OFF" : "SIDE";
             if (sel) q_tri(12, y + 4, Q_TEXT);
             q_text(22, y, MI_NAME[i], sel ? Q_TEXT : Q_DIM);
             q_text(128, y, val, sel ? Q_TEXT : Q_PDIM);
@@ -687,7 +689,7 @@ static UI_NOINLINE void quest_menu_draw(void)
 }
 
 /* ---- SOUNDS (menu): every sound of the selected hero (synth bank / drum kits). OCT+ = play / pause (the other tracks are soloed out), SEL keeps it ---- */
-static UI_NOINLINE void sx_name(char *d, uint32_t i, uint32_t max)
+static UI_SMALL void sx_name(char *d, uint32_t i, uint32_t max)
 {
     const char *n;
     if (is_drum(TSEL)) n = DRUM_KIT_NAMES[i % DRUM_KITS];
@@ -696,13 +698,13 @@ static UI_NOINLINE void sx_name(char *d, uint32_t i, uint32_t max)
     else n = "USER";
     str_cpy(d, n, max);
 }
-static UI_NOINLINE void sx_btn(int32_t x, int32_t y, int32_t w, int32_t h, uint16_t edge, uint16_t fill)   /* a button: bevelled box */
+static UI_SMALL void sx_btn(int32_t x, int32_t y, int32_t w, int32_t h, uint16_t edge, uint16_t fill)   /* a button: bevelled box */
 {
     cv_rect(x, y, w, h, fill), cv_rect(x, y, w, 1, edge), cv_rect(x, y + h - 1, w, 1, edge), cv_rect(x, y, 1, h, edge), cv_rect(x + w - 1, y, 1, h, edge);
     cv_rect(x + 1, y + h, w - 1, 1, Q_PDIM);                                      /* its shadow */
 }
 static void gm_cass(int32_t x, int32_t y, int32_t w, uint16_t col, int empty);                     /* (ui_quest_pages.c) */
-static UI_NOINLINE void quest_rhythm_draw(void)
+static UI_SMALL void quest_rhythm_draw(void)
 {
     static const uint16_t KC[8] = {RGB(0xc8, 0x48, 0x3a), RGB(0x5a, 0x8a, 0xd0), RGB(0xe0, 0x80, 0x3a), RGB(0x8a, 0x6a, 0x9a), RGB(0xf0, 0xc8, 0x60), RGB(0x7a, 0xb0, 0x4e),
                                    RGB(0x4a, 0xa8, 0xa8), RGB(0xe0, 0x90, 0x90)};
@@ -759,7 +761,7 @@ static UI_NOINLINE void quest_rhythm_draw(void)
 }
 
 /* ---- FILTER (menu): the colour filters as radio buttons; the strip of scene above is the preview (cheap: 60 rows, redrawn when the pick moves), and the ramp of each one beside it ---- */
-static UI_NOINLINE void quest_filter_draw(void)
+static UI_SMALL void quest_filter_draw(void)
 {
     uint32_t i, top = qf_sel > 4u ? qf_sel - 4u : 0u, sig = 61u + qf_sel * 131u + q_filter * 977u + (uint32_t)(ui.msg_t != 0) * 7u;
     q_tick_clocks();
@@ -797,7 +799,7 @@ static UI_NOINLINE void quest_filter_draw(void)
 }
 
 /* ---- KEYBOARD LED (menu): the effect a key press makes on the LEDs, one at a time; the knobs set its speed and its fade ---- */
-static UI_NOINLINE void quest_led_draw(void)
+static UI_SMALL void quest_led_draw(void)
 {
     static const char *const FXN[6] = {"Fade", "Waves", "Explosion", "Rain", "Comet", "Fireworks"};          /* by the effect's own number */
     static const char *const FXD[6] = {"the light fades out", "waves go to both sides", "a small burst", "drops fall on the diagonal", "a light shoots right", "a rocket climbs and bursts"};
@@ -836,7 +838,7 @@ static UI_NOINLINE void quest_led_draw(void)
 }
 
 /* ---- the IMPORTER (menu): the 3 sample slots and the 12 songs, loaded from the web editor ---- */
-static UI_NOINLINE void imp_name(char *d, const char *src, uint32_t max)   /* a header's name: not 0-terminated when full */
+static UI_SMALL void imp_name(char *d, const char *src, uint32_t max)   /* a header's name: not 0-terminated when full */
 {
     uint32_t j;
     for (j = 0; j < max && src[j] >= 32 && src[j] < 127; j++)
@@ -844,8 +846,8 @@ static UI_NOINLINE void imp_name(char *d, const char *src, uint32_t max)   /* a 
     d[j] = 0;
 }
 #define IMP_ROWS 11u
-static UI_NOINLINE uint32_t imp_top(void) { return imp_sel < 5u ? 0u : imp_sel + 6u > IMP_N ? IMP_N - IMP_ROWS : imp_sel - 5u; }
-static UI_NOINLINE uint32_t imp_sig(uint32_t i)
+static UI_SMALL uint32_t imp_top(void) { return imp_sel < 5u ? 0u : imp_sel + 6u > IMP_N ? IMP_N - IMP_ROWS : imp_sel - 5u; }
+static UI_SMALL uint32_t imp_sig(uint32_t i)
 {
     uint32_t h = (i == imp_sel ? 3u : 1u) * 977u, j;
     if (i < SMP_USER_SLOTS) {
@@ -861,7 +863,7 @@ static UI_NOINLINE uint32_t imp_sig(uint32_t i)
     }
     return h;
 }
-static UI_NOINLINE void quest_importer_draw(void)
+static UI_SMALL void quest_importer_draw(void)
 {
     uint32_t i, r, kib = 0, nsng = 0, prog = imp_prog(), top = imp_top();
     q_tick_clocks();
@@ -936,8 +938,8 @@ static UI_NOINLINE void quest_importer_draw(void)
 
 /* ---- PARTY and STATUS (menu): the four heroes = the four tracks, with the author's portraits ---- */
 static const char *const QH_CLASS[4] = {"Elf Wiz.", "ARCHER", "CLERIC", "KNIGHT"};
-static UI_NOINLINE const char *q_eng_name(const track_t *t) { return is_drum(t) ? "DRUMS" : ENGINES[t->eng_req % NENGINES]->name; }
-static UI_NOINLINE uint32_t q_hero_pct(const track_t *t, uint32_t k)   /* the sheet: 0 FOR (how hard), 1 AGI (how busy), 2 INT (how wide), 3 SOR (swing), 4 XP (steps filled) */
+static UI_SMALL const char *q_eng_name(const track_t *t) { return is_drum(t) ? "DRUMS" : ENGINES[t->eng_req % NENGINES]->name; }
+static UI_SMALL uint32_t q_hero_pct(const track_t *t, uint32_t k)   /* the sheet: 0 FOR (how hard), 1 AGI (how busy), 2 INT (how wide), 3 SOR (swing), 4 XP (steps filled) */
 {
     uint32_t len = trk_len(t), i, on = 0, sum = 0, lo = 127, hi = 0, lanes = 0;
     for (i = 0; i < len && i < NSTEP; i++) {
@@ -966,7 +968,7 @@ static UI_NOINLINE uint32_t q_hero_pct(const track_t *t, uint32_t k)   /* the sh
     }
     return clamp(t->p[P_SSWING] * 100 / 127, 0, 100);
 }
-static UI_NOINLINE void q_hero_card(uint32_t i, int32_t x, int32_t y, int sel)
+static UI_SMALL void q_hero_card(uint32_t i, int32_t x, int32_t y, int sel)
 {
     const track_t *t = &trk[i];
     int silent = trk_silent(t);
@@ -992,7 +994,7 @@ static UI_NOINLINE void q_hero_card(uint32_t i, int32_t x, int32_t y, int sel)
     if (silent) q_text_c(x + 26, y + 98, "rest", Q_DIM);
     if (silent) cv_rect(x + 1, y + 13, 50, 64, RGB(0x1e, 0x14, 0x18)), cv_rect(x + 1, y + 13, 0, 0, 0);
 }
-static UI_NOINLINE void quest_party_draw(void)
+static UI_SMALL void quest_party_draw(void)
 {
     uint32_t i;
     q_tick_clocks();
@@ -1023,16 +1025,27 @@ static UI_NOINLINE void quest_party_draw(void)
         }
         cv_blit(9 + (int32_t)i * 58, 24);
     }
-    if (q_changed(8, (uint32_t)song.sel * 17u + 5u + q_var[2] * 31u + q_var[3] * 61u)) {
+    if (q_changed(8, (uint32_t)song.sel * 17u + 5u + q_var[2] * 31u + q_var[3] * 61u + stage_sig() * 7u)) {
         const track_t *t = &trk[song.sel];
         char b[12];
         cv_begin(240, 66, Q_BG);
-        q_text(10, 2, q_var[song.sel] ? Q_ALT_CLASS[song.sel] : QH_CLASS[song.sel], Q_HI);
-        q_text(80, 2, q_eng_name(t), Q_TRK[song.sel]);
+        q_text(10, 0, q_var[song.sel] ? Q_ALT_CLASS[song.sel] : QH_CLASS[song.sel], Q_HI);
+        q_text(80, 0, q_eng_name(t), Q_TRK[song.sel]);
         fmt_int(b, (int32_t)song.sel + 1);
-        q_text(6, 20, "track", Q_DIM), q_text(70, 20, b, Q_TEXT);
+        q_text(6, 15, "track", Q_DIM), q_text(70, 15, b, Q_TEXT);
         fmt_int(b, (int32_t)q_hero_pct(t, 4));
-        q_text(6, 38, "steps", Q_DIM), q_text(70, 38, b, Q_TEXT), q_text(70 + text_w(&FONT_P, b), 38, "% filled", Q_PDIM);
+        q_text(6, 30, "steps", Q_DIM), q_text(70, 30, b, Q_TEXT), q_text(70 + text_w(&FONT_P, b), 30, "% filled", Q_PDIM);
+        {   /* the stage (knobs 1-4): who plays; the next turn is on the bar */
+            char sb[40];
+            str_cpy(sb, ST_FORM[st_form], sizeof sb);
+            str_cpy(sb + str_len(sb), " " , sizeof sb - str_len(sb));
+            fmt_int(sb + str_len(sb), (int32_t)st_lead + 1);
+            str_cpy(sb + str_len(sb), " / ", sizeof sb - str_len(sb));
+            str_cpy(sb + str_len(sb), ST_TURN[st_turn], sizeof sb - str_len(sb));
+            str_cpy(sb + str_len(sb), " / ", sizeof sb - str_len(sb));
+            str_cpy(sb + str_len(sb), ST_STYLE[st_style], sizeof sb - str_len(sb));
+            q_text(6, 45, "stage", Q_DIM), q_text(70, 45, sb, st_form == 3u && !st_turn ? Q_PDIM : Q_HI);
+        }
         cv_blit(0, 140);
     }
     if (q_changed(16, 1u + song.sel * 7u + q_var[2] * 31u + q_var[3] * 61u)) {
@@ -1045,7 +1058,7 @@ static UI_NOINLINE void quest_party_draw(void)
     }
     qb.fresh = 0;
 }
-static UI_NOINLINE void quest_status_draw(void)
+static UI_SMALL void quest_status_draw(void)
 {
     static const char *const L[4] = {"FOR", "AGI", "INT", "SOR"};
     const track_t *t = &trk[song.sel];
@@ -1094,14 +1107,14 @@ static UI_NOINLINE void quest_status_draw(void)
 }
 
 /* ---- ABOUT: page 0 = how much room is left in the FM-1 (firmware, RAM, samples, songs), page 1 = the credits ---- */
-static UI_NOINLINE void q_kb(char *d, uint32_t bytes)                 /* 560912 -> "547.7K" (KiB, one decimal) */
+static UI_SMALL void q_kb(char *d, uint32_t bytes)                 /* 560912 -> "547.7K" (KiB, one decimal) */
 {
     uint32_t t = (bytes * 10u + 512u) / 1024u;
     fmt_int(d, (int32_t)(t / 10u));
     d += str_len(d);
     d[0] = '.', d[1] = (char)('0' + t % 10u), d[2] = 'K', d[3] = 0;
 }
-static UI_NOINLINE void q_mem_row(int32_t y, const char *lab, uint32_t used, uint32_t total, uint16_t col, uint32_t kib)
+static UI_SMALL void q_mem_row(int32_t y, const char *lab, uint32_t used, uint32_t total, uint16_t col, uint32_t kib)
 {
     char a[12], b[12], c[12], line[32];
     uint32_t n;
@@ -1115,7 +1128,7 @@ static UI_NOINLINE void q_mem_row(int32_t y, const char *lab, uint32_t used, uin
     q_text(10, y + 21, "free", Q_DIM);
     q_text_r(230, y + 21, c, Q_PDIM);
 }
-static UI_NOINLINE void quest_about_draw(void)
+static UI_SMALL void quest_about_draw(void)
 {
     uint32_t fw = (uint32_t)((uintptr_t)_etext - FM1_APP_BASE) + (uint32_t)(_rt_end - _rt_start) * 4u + (uint32_t)(_data_end - _data_start) * 4u;
     uint32_t ram = (uint32_t)(_data_end - _data_start + _bss_end - _bss_start) * 4u, pool = (uint32_t)(_pool_end - _pool_start) * 4u, i, kib = 0, ns = 0;
@@ -1148,7 +1161,7 @@ static UI_NOINLINE void quest_about_draw(void)
     } else {
         if (q_changed(0, 17u)) {
         cv_begin(240, 118, Q_BG);
-        q_text(10, 0, "Thanks: SLOOP, Felucca", Q_TEXT);
+        q_text(10, 0, "Based on SLOOP 2.6, Felucca", Q_TEXT);
         q_text(10, 16, "r/MVaveFM1 community", Q_TEXT);
         q_text(10, 34, "fm1.quest", Q_HI);
         q_text(10, 50, "GPL-3.0, no warranty", Q_DIM);
@@ -1172,7 +1185,7 @@ static UI_NOINLINE void quest_about_draw(void)
 }
 
 /* ---- the two edit pages: EQUIP (EDIT 1 / 2: the engine's parameters, presets as items) and WEATHER (the FX page) ---- */
-static UI_NOINLINE void q_icon(const char *kind, int32_t x, int32_t y, uint16_t c)       /* 12 x 12 waveform icon (saw sine square tri noise) */
+static UI_SMALL void q_icon(const char *kind, int32_t x, int32_t y, uint16_t c)       /* 12 x 12 waveform icon (saw sine square tri noise) */
 {
     int32_t px, prev = -1;
     for (px = 1; px <= 10; px++) {
@@ -1187,7 +1200,7 @@ static UI_NOINLINE void q_icon(const char *kind, int32_t x, int32_t y, uint16_t 
         prev = yy;
     }
 }
-static UI_NOINLINE void q_cols(const char *lab[4], const char *val[4], int32_t ratio[4], char (*vb)[16], char (*lb)[10])
+static UI_SMALL void q_cols(const char *lab[4], const char *val[4], int32_t ratio[4], char (*vb)[16], char (*lb)[10])
 {
     uint32_t c;
     for (c = 0; c < 4u; c++) {
@@ -1203,7 +1216,70 @@ static UI_NOINLINE void q_cols(const char *lab[4], const char *val[4], int32_t r
         ratio[c] = d->fmt == F_ENUM && d->max < 2 ? 0 : RATIO(d, *vp);
     }
 }
-static UI_NOINLINE void quest_equip_draw(void)
+/* ---- WAVE (EDIT, SAMPLE engine only; the mini sample editor from No Man Sky FM / winampFM): the wave of a ½ sampler slot (USR1-4), IN and OUT as orange lines
+ * (what is outside them is a mesh), the loop green, the play head white; KNOBS IN, OUT, LOOP, TUNE ---- */
+static UI_SMALL void q_wtime(char *b, uint32_t pos, uint32_t rate)       /* a place in the slot as seconds, 1.25 */
+{
+    uint32_t hz = (rate * 44100u) >> 16, cs = hz ? pos * 100u / hz : 0;
+    fmt_int(b, (int32_t)(cs / 100u));
+    b += str_len(b);
+    b[0] = '.', b[1] = (char)('0' + cs / 10u % 10u), b[2] = (char)('0' + cs % 10u), b[3] = 0;
+}
+static UI_SMALL void quest_wave_draw(void)
+{
+    const uint16_t OR = RGB(0xff, 0x5a, 0x1f);
+    uint32_t si = (uint32_t)TSEL->p[P_E0] % SMP_NALL, k = si >= SMP_NSETS ? si - SMP_NSETS : 9u, c, sig, n = 0, rate = 0;
+    int32_t in = TSEL->p[P_E5], out = TSEL->p[P_E7], x, ix, ox, head = -1, mx = 1;
+    int ok = k < SMP_USER_SLOTS && usr_nz[k] == 1u && usr_grid[k][0];
+    char lb[4][10] = {{0}}, vb[4][16] = {{0}}, pn[16], b[24];
+    const char *lab[4], *val[4];
+    int32_t ratio[4];
+    q_tick_clocks();
+    q_enter(QSN_EQUIP);
+    q_cols(lab, val, ratio, vb, lb);
+    if (ok) {
+        n = usr_zone[k][0].n, rate = usr_zone[k][0].rate;
+        for (c = 0; c < NVOICE; c++)                              /* the play head: a voice on this slot */
+            if (TSEL->v[c].active && (uint32_t)TSEL->v[c].s[4] >= 0x8000u && (((uint32_t)TSEL->v[c].s[4] >> 5) & 3u) == k)
+                head = (int32_t)(TSEL->v[c].ph[0] * 240u / n);
+        { q_wtime(vb[0], ((uint32_t)in * n) >> 7, rate); q_wtime(vb[1], n - (n >> 7) * (uint32_t)out, rate); }
+    }
+    sig = studio_hash((uint32_t)in * 7u + (uint32_t)out * 131u + (uint32_t)TSEL->p[P_E3] * 977u + (uint32_t)TSEL->p[P_E1] * 31u + si * 13u + (uint32_t)(head + 1) * 3u + song.sel * 7919u + (ui.hot_t ? ui.hot_col + 1u : 0u) * 4001u, ok ? "wave" : "none");
+    if (q_changed(20, 1u + song.sel * 7u + q_msg_sig())) {
+        cv_begin(240, 19, Q_BG);
+        q_title(6, "Wave", Q_HI);
+        trk_short_name(song.sel, pn);
+        b[0] = (char)('1' + song.sel), b[1] = ' ', b[2] = 0, str_cpy(b + 2, pn, 18);
+        q_text(6 + text_w(&FONT_QT, "Wave") + 8, 4, b, Q_TEXT);
+        q_bar_end();
+    }
+    if (q_changed(21, sig)) {
+        cv_begin(240, 120, Q_BG);
+        if (!ok) {
+            const char *t = k < SMP_USER_SLOTS ? "empty slot" : "set: USR1 - USR4";
+            q_text_c(120, 52, t, Q_DIM);
+        } else {
+            ix = in * 240 / 128, ox = 239 - out * 240 / 128;
+            for (x = 0; x < 240; x++)
+                if (usr_peak[k][x] > mx) mx = usr_peak[k][x];
+            for (x = 0; x < 240; x++) {                           /* the wave in the hero's colour; outside IN..OUT a mesh */
+                int32_t a = usr_peak[k][x] * 52 / mx, y;
+                if (x >= ix && x <= ox) cv_rect(x, 58 - a, 1, 2 * a + 1, Q_TRK[song.sel & 3u]);
+                else for (y = 58 - a + ((x ^ a) & 1); y <= 58 + a; y += 2) cv_rect(x, y, 1, 1, Q_OFFHI);
+            }
+            cv_rect(0, 58, 240, 1, Q_OFFHI);
+            if (TSEL->p[P_E3] && (in || out))                     /* LOOP (trimmed): a green bracket under IN..OUT */
+                cv_rect(ix, 114, ox - ix + 1, 3, RGB(0x7a, 0xb0, 0x4e)), cv_rect(ix, 108, 2, 9, RGB(0x7a, 0xb0, 0x4e)), cv_rect(ox - 1, 108, 2, 9, RGB(0x7a, 0xb0, 0x4e));
+            cv_rect(ix > 0 ? ix - 1 : 0, 0, 2, 120, OR);
+            cv_rect(ox, 0, 2, 120, OR);
+            if (head >= 0 && head < 240) cv_rect(head, 0, 1, 120, Q_TEXT);
+        }
+        cv_blit(0, 24);
+    }
+    q_dials(lab, val, ratio, 22, sig);
+    qb.fresh = 0;
+}
+static UI_SMALL void quest_equip_draw(void)
 {
     static const char *const ICON[8] = {"saw", "sine", "square", "sine", "saw", "tri", "square", "noise"};
     uint32_t i, sel = song.sel, total, cur = preset_pos(&total), first = cur / 12u * 12u, sig;
@@ -1280,7 +1356,7 @@ static UI_NOINLINE void quest_equip_draw(void)
     qb.fresh = 0;
 }
 /* a stock screen takes over (a page without a Quest screen, the song screen, a hold, ABOUT): wipe ours */
-static UI_NOINLINE void quest_leave(void)
+static UI_SMALL void quest_leave(void)
 {
     if (qs.screen) {
         qs.screen = 0;

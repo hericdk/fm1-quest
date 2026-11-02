@@ -3,3 +3,5 @@ build/
 __pycache__/
 site/
 *.o
+_*/
+quest/web/fm1quest.wasm

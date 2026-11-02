@@ -11,7 +11,7 @@
 static const char *sk_lab[4], *sk_val[4];
 static int32_t sk_ratio[4];
 
-static UI_NOINLINE int sk_scene(void)                                     /* 0 ledger, 1 board, 2 beats, 3 window, 4 seats, 5 scroll, 6 "the drum track has none" */
+static UI_SMALL int sk_scene(void)                                     /* 0 ledger, 1 board, 2 beats, 3 window, 4 seats, 5 scroll, 6 "the drum track has none" */
 {
     const page_t *pg = cur_page();
     if (is_drum(TSEL) && !page_for_drum(pg)) return 6;
@@ -24,7 +24,7 @@ static UI_NOINLINE int sk_scene(void)                                     /* 0 l
     default: return 1;
     }
 }
-static UI_NOINLINE const char *sk_name(void)                              /* the name of the place */
+static UI_SMALL const char *sk_name(void)                              /* the name of the place */
 {
     const page_t *pg = cur_page();
     if (pg->graph == GR_BROWSE) return "Armory";
@@ -44,13 +44,13 @@ static UI_NOINLINE const char *sk_name(void)                              /* the
     default: return "Workshop";
     }
 }
-static UI_NOINLINE void sk_wall(void)                                     /* a dark brick wall, the room of every page here */
+static UI_SMALL void sk_wall(void)                                     /* a dark brick wall, the room of every page here */
 {
     int32_t r, k;
     p_R(0, PS_Y0, 240, 176, QP(0));
     for (r = 0; r < 13; r++) for (k = 0; k < 9; k++) p_R(k * 28 + (r & 1) * 14 - 8, PS_Y0 + 1 + r * 14, 26, 12, QP(1));
 }
-static UI_NOINLINE void sk_torch(int32_t x, int32_t y, int32_t big, uint32_t t)   /* a wall torch: handle, cup, flicker */
+static UI_SMALL void sk_torch(int32_t x, int32_t y, int32_t big, uint32_t t)   /* a wall torch: handle, cup, flicker */
 {
     int32_t fx = p_sin(t + (uint32_t)x * 40u, 130) * 2 / 127, h = 7 + big * 4 + p_sin(t + (uint32_t)x * 17u, 90) * 2 / 127;
     p_R(x - 1, y, 3, 8, QP(4)), p_R(x - 3, y - 2, 7, 3, QP(5));
@@ -58,12 +58,12 @@ static UI_NOINLINE void sk_torch(int32_t x, int32_t y, int32_t big, uint32_t t) 
     p_tri(x - 2, y - 2, x + 2, y - 2, x + fx / 2, y - 2 - h * 7 / 10, QP(9));
     p_tri(x - 1, y - 2, x + 1, y - 2, x, y - 2 - h * 4 / 10, QP(10));
 }
-static UI_NOINLINE void sk_row(int32_t y, int32_t sel, uint16_t c)       /* a list line: the chosen one lit with a torch mark */
+static UI_SMALL void sk_row(int32_t y, int32_t sel, uint16_t c)       /* a list line: the chosen one lit with a torch mark */
 {
     if (sel) p_R(14, y - 2, 212, 17, QP(4)), p_R(14, y - 2, 212, 1, QP(10)), p_R(16, y + 2, 4, 8, QP(9)), p_R(17, y, 2, 3, QP(10));
     (void)c;
 }
-static UI_NOINLINE void sk_ledger(const ps_c *c)
+static UI_SMALL void sk_ledger(const ps_c *c)
 {
     const page_t *pg = cur_page();
     int32_t i;
@@ -106,7 +106,7 @@ static UI_NOINLINE void sk_ledger(const ps_c *c)
         }
     }
 }
-static UI_NOINLINE void sk_board(const ps_c *c)
+static UI_SMALL void sk_board(const ps_c *c)
 {
     int32_t i;
     sk_wall();
@@ -123,7 +123,7 @@ static UI_NOINLINE void sk_board(const ps_c *c)
     }
     (void)c;
 }
-static UI_NOINLINE void sk_beats(const ps_c *c)                                                              /* GLOBAL: the swung eighths */
+static UI_SMALL void sk_beats(const ps_c *c)                                                              /* GLOBAL: the swung eighths */
 {
     int32_t sw = song.g[G_SWING] > 50 ? song.g[G_SWING] - 50 : 0, k, cur = song.playing ? (int32_t)(fm1_ms * (uint32_t)song.g[G_BPM] / 30000u % 8u) : -1;
     char b[12];
@@ -138,7 +138,7 @@ static UI_NOINLINE void sk_beats(const ps_c *c)                                 
     q_panel(80, 28, 80, 40);
     q_text_c(120, 34, b, Q_HI), q_text_c(120, 50, "bpm", Q_DIM);
 }
-static UI_NOINLINE void sk_window(const ps_c *c)                                                             /* MASTER: the DJ filter, the dust, the duck */
+static UI_SMALL void sk_window(const ps_c *c)                                                             /* MASTER: the DJ filter, the dust, the duck */
 {
     int32_t n = song.g[G_FILT], x0 = n < 0 ? 239 + n * 239 / 64 : n * 239 / 63, x, py = 0, k, d = song.g[G_DUCK] * 60 / 127;
     sk_wall();
@@ -158,7 +158,7 @@ static UI_NOINLINE void sk_window(const ps_c *c)                                
     p_R(228, 28 + 146 - d - 4, 8, d + 4, QP(8)), p_R(228, 28, 8, 146, QP(5));                                  /* the duck: a bar that is pushed down */
     p_R(229, 29 + 146 - 2 - d, 6, d, QP(9));
 }
-static UI_NOINLINE void sk_seats(const ps_c *c)                                                               /* DRUMS (the pads) or the voices */
+static UI_SMALL void sk_seats(const ps_c *c)                                                               /* DRUMS (the pads) or the voices */
 {
     int32_t k;
     sk_wall();
@@ -177,7 +177,7 @@ static UI_NOINLINE void sk_seats(const ps_c *c)                                 
     }
     (void)c;
 }
-static UI_NOINLINE void sk_scroll(const ps_c *c)                                                              /* STEP: the bank as a piano roll; PATTERN: all the steps */
+static UI_SMALL void sk_scroll(const ps_c *c)                                                              /* STEP: the bank as a piano roll; PATTERN: all the steps */
 {
     const track_t *t = TSEL;
     uint32_t i, j, len = (uint32_t)t->p[P_SLEN];
@@ -220,7 +220,7 @@ static UI_NOINLINE void sk_scroll(const ps_c *c)                                
         }
     }
 }
-static UI_NOINLINE void sk_nodrum(const ps_c *c)
+static UI_SMALL void sk_nodrum(const ps_c *c)
 {
     (void)c;
     sk_wall();
@@ -228,13 +228,13 @@ static UI_NOINLINE void sk_nodrum(const ps_c *c)
     q_text_c(120, 70, "the drum track has no", Q_TEXT), q_text_c(120, 84, "sound of its own", Q_TEXT);
     q_text_c(120, 104, "seq  tracks  glo  drums", Q_DIM);
 }
-static UI_NOINLINE uint32_t sk_dirty(const ps_c *c, ps_r *o)                                                   /* what moves: the torches, the dust, the playhead, the pads */
+static UI_SMALL uint32_t sk_dirty(const ps_c *c, ps_r *o)                                                   /* what moves: the torches, the dust, the playhead, the pads */
 {
     (void)c;
     o[0] = (ps_r){0, PS_Y0, 239, 193, 0};
     return 1;
 }
-static UI_NOINLINE void q_stock_cols(const char *lab[4], const char *val[4], int32_t ratio[4], char (*vb)[16], char (*lb)[10])
+static UI_SMALL void q_stock_cols(const char *lab[4], const char *val[4], int32_t ratio[4], char (*vb)[16], char (*lb)[10])
 {
     const page_t *pg = cur_page();
     uint32_t c;
@@ -268,7 +268,7 @@ static UI_NOINLINE void q_stock_cols(const char *lab[4], const char *val[4], int
         else if (pg->id[c] == G_INFO) { fmt_int(vb[c], (int32_t)(song.cpu_q8 * 100u / 256u)); str_cpy(vb[c] + str_len(vb[c]), "%", 2); }
     }
 }
-static UI_NOINLINE void quest_stock_draw(void)
+static UI_SMALL void quest_stock_draw(void)
 {
     static void (*const FN[7])(const ps_c *) = {sk_ledger, sk_board, sk_beats, sk_window, sk_seats, sk_scroll, sk_nodrum};
     static ps_r prev;
@@ -314,7 +314,7 @@ static UI_NOINLINE void quest_stock_draw(void)
 }
 
 /* ---- SONG: the chain of sections as a chronicle ---- */
-static UI_NOINLINE void quest_song_draw(void)
+static UI_SMALL void quest_song_draw(void)
 {
     static uint32_t previous;
     uint32_t i, start, sig;
@@ -377,7 +377,7 @@ static UI_NOINLINE void quest_song_draw(void)
 }
 
 /* ---- the HOLD ring (REC held: clear; SAVE held: save) ---- */
-static UI_NOINLINE void quest_hold_draw(void)
+static UI_SMALL void quest_hold_draw(void)
 {
     static uint32_t cache;
     uint32_t span = ui.hold_kind == 1u ? HOLD_CLEAR_MS : HOLD_SAVE_MS, el = fm1_ms - ui.hold_t0;

@@ -5,10 +5,11 @@
  * OCT+ while powering on), which asks for each label in turn. The learned
  * table lives in .noinit and, with FELUCCA_FLASH, in flash with the settings
  * (project.c). */
+/* (B_SCL: the button printed SEL, the key / scale button between FX and ENV) */
 enum { B_FX, B_SCL, B_ENV, B_LFO, B_EDIT, B_GLO, B_HOME, B_SAVE, B_ARP, B_SEQ, B_PLAY, B_REC,
        B_OCTDN, B_OCTUP, NB };
 enum { EN_SELECT, EN_ALGO, EN_PRESET, EN_K1, EN_K2, EN_K3, EN_K4, NE };
-static const char *const B_NAME[NB] = {"FX", "SCL", "ENV", "LFO", "EDIT", "GLO", "HOME", "SAVE",
+static const char *const B_NAME[NB] = {"FX", "SEL", "ENV", "LFO", "EDIT", "GLO", "HOME", "SAVE",
                                         "ARP", "SEQ", "PLAY", "REC", "OCT-", "OCT+"};
 static const char *const E_NAME[NE] = {"SELECT", "ALGORITHM", "PRESETS", "KNOB 1", "KNOB 2",
                                         "KNOB 3", "KNOB 4"};
@@ -29,7 +30,7 @@ static const panel_t PANEL_DEFAULT = {
     {1, 1, 1, 1, 1, 1, 1},
 };
 
-static void panel_init(void)                     /* also after a flash load: ids are used as array indexes and shifts */
+UI_SMALL static void panel_init(void)                     /* also after a flash load: ids are used as array indexes and shifts */
 {
     uint32_t i, ok = panel.magic == PANEL_MAGIC;
     for (i = 0; ok && i < NB; i++)
@@ -40,7 +41,7 @@ static void panel_init(void)                     /* also after a flash load: ids
         panel = PANEL_DEFAULT;
 }
 
-static uint32_t panel_btn_of(uint32_t matrix_id)        /* label of a matrix button, NB if none */
+UI_SMALL static uint32_t panel_btn_of(uint32_t matrix_id)        /* label of a matrix button, NB if none */
 {
     uint32_t b;
     for (b = 0; b < NB; b++)
@@ -49,13 +50,19 @@ static uint32_t panel_btn_of(uint32_t matrix_id)        /* label of a matrix but
     return NB;
 }
 
-static void panel_led(uint32_t label, int on) { fm1_led_key(panel.btn[label], on); }
+UI_SMALL static void panel_led(uint32_t label, int on) { fm1_led_key(panel.btn[label], on); }
 
 /* steps of a role, + = clockwise */
 static uint32_t ui_input_ms;                    /* the last button, key or knob turn (ui_input.c; autosave) */
-static int32_t panel_enc(uint32_t role)
+/* the knobs (roles, bit per EN_*) not to be read again in this UI pass (ui_input: a layer took them, #102 of
+ * Felucca): panel_enc returns 0 and leaves their detents for the next pass */
+static uint32_t enc_hold;
+UI_SMALL static int32_t panel_enc(uint32_t role)
 {
-    int32_t s = fm1_enc_take(panel.enc[role]) * panel.dir[role];
+    int32_t s;
+    if ((enc_hold >> role) & 1u)
+        return 0;
+    s = fm1_enc_take(panel.enc[role]) * panel.dir[role];
     if (s)
         ui_input_ms = fm1_ms;                      /* a knob turning is not idle either: autosave waits */
     return s;
@@ -75,57 +82,126 @@ struct { uint32_t magic, palette, lowcut, zoom; } settings __attribute__((sectio
  * (project.c persist_t.lights), read at every boot; not in .noinit, so nothing there moves. The same
  * word keeps SYNC and the REC screen's MODE / START (seq.c rec_tempo, rec_count) */
 enum { LIGHTS_OFF, LIGHTS_LOW, LIGHTS_MID, LIGHTS_HIGH, LIGHTS_N };
-enum { KEYS_OFF, KEYS_C, KEYS_WHITE, KEYS_N };
+enum { KEYS_OFF, KEYS_C, KEYS_WHITE, KEYS_ALL, KEYS_N };   /* (ALL: SLOOP 2.4; an older SLOOP reads it as OFF) */
 /* (the menu's LIGHTS / KEYS / NOTES are gone: the three stay off, so the code that read them folds away) */
 static const uint8_t lights_lvl = 0, lights_keys = 0, lights_notes = 0;
 static uint8_t lights_sync;                    /* GLO > SYSTEM > SYNC (G_SYNC), kept here: 0 INT, 1 USB, 2 TRS */
-static uint8_t q_var[4];                       /* the class variants of the Party slots (ui_quest_fig.c), kept with the settings: bits 14, 15 */
-static uint8_t q_warrior_ok;                   /* the red warrior is unlocked (the first boss beaten): bit 29 */
+static uint8_t q_var[4];                       /* the class variants of the Party slots (ui_quest_fig.c), kept with the settings (settings.zoom, q_opts_save) */
+static uint8_t q_warrior_ok;                   /* the red warrior is unlocked (the first boss beaten): settings.zoom */
 static uint8_t q_ult_seen;                     /* bit per hero: its whole ult animation has been seen once (then a button skips it): mage 6, archer 7, cleric 8; the fighter's bit is RAM only */
-static uint8_t q_ult_fullscr;                     /* menu ULT ANIMATION = FULL: the ult plays on the whole screen (bit 28); off: q_ult_simple; otherwise the diagonal band */
+static uint8_t q_ult_fullscr;                     /* menu ULT ANIMATION = FULL: the ult plays on the whole screen (settings.zoom); off: q_ult_simple; otherwise the diagonal band */
 static uint8_t q_ult_simple;                   /* menu ULT ANIMATION off: the ult is the simple effect only (bit 5) */
 static uint8_t q_boss1_seen;                   /* the first boss has been met: the mage's ult starts at 50 % only that once (bit 4) */
 static uint8_t q_filter;                       /* the colour filter of the scenes (menu FILTER): 0 = the default, 1..11 = the user's pick; bits 0-3 */
 static void q_filter_set(uint32_t fi);          /* ui_quest.c */
-static uint8_t boot_mute;                      /* the power-on sound is off (menu BOOT SOUND): bit 31 */
+static uint8_t boot_mute;                      /* the power-on sound is off (menu BOOT SOUND): settings.zoom */
 static uint8_t led_fx = 1, led_sp = 13, led_fd = 3, led_hold;   /* the default: waves, speed 13, fade 3, once per press (hold: it goes on while the key is held) */
 static const uint8_t LED_ORDER[6] = {1, 0, 2, 3, 4, 5};   /* the order the menu lists them in: waves, fade, explosion, rain, comet, "fireworks" */  /* KEYBOARD LED: the effect a key press makes, its speed and its fade, 0..15 (bits 16-27) */
+static uint8_t lights_sync;                    /* GLO > SYSTEM > SYNC (G_SYNC), kept here: 0 INT, 1 USB, 2 TRS */
+static uint8_t lights_mout;                    /* GLO > SYSTEM > MIDI (G_MIDI): 1 = the sequencer goes to MIDI OUT too */
+static uint8_t lights_min;                     /* GLO > SYSTEM > IN (G_ROUTE): 0 NOTES, 1 CLOCK only, 2..17 (2.6) CH 1..16 only */
+/* 2.6: GLO > MIDI CH1 CH2 CH3, GLO > DRUMS > CH, GLO > MIDI > OTHER: settings of the FM-1 (kept with the MIDI LEARN map
+ * after the SYN kits: project.c midi_part), mirrored in song.g (felucca_init) */
+#define MIDI_SET_DEF {1, 2, 3, 10, 0, 2, 0, 0, 0, 0}   /* CH1 CH2 CH3, drums, OTHER, (2.6) BEND, (2.7) FX CH, DR MAP, REMOTE,
+                                                     * CLK OUT */
+static uint8_t midi_set[10] = MIDI_SET_DEF;
+static uint8_t fxfade;                          /* (2.7.2) FX layer SELECT (FX held): the punch-in FX fade, 0..15 (punch.c);
+                                                 * a setting of the FM-1, mirrored in song.g[G_FXFADE], kept in BEND's byte */
 static const uint16_t LIGHTS_NS[LIGHTS_N] = {0u, 500u, 1000u, 2000u};   /* the backlight pulse a frame (ns): a lit
                                                 * LED ~95 us, the glow (landmarks) 4 us (fm1_input.h) */
-static uint32_t lights_word(void)
+static uint8_t usb_serial;                      /* menu USB SERIAL: 1 = the serial console presented (usb.c) */
+static uint8_t usb_rate;                        /* menu USB RATE (2.7 beta): 0 AUTO, 1 44.1, 2 48 kHz (usb.c usb_rate_mode, at the next start) */
+static uint8_t cpu1_off;                        /* menu 2ND CORE: 1 = OFF, every render unit on core 0 (cpu1.h cpu1_units);
+                                                 * 2.7: ON by default (bit 26 set = OFF); core 1 starts at power-on only when ON */
+static uint8_t vis_style;                       /* the visualiser's style, 0..11 (ui_vis.c) */
+static uint8_t knob_accel_off;                  /* menu KNOB ACCEL (2.7): 1 = OFF, one value a detent however fast (ui_input.c accel) */
+static uint8_t step_adv_off;                    /* menu SEQ > STEP ADVANCE (2.7.1): 1 = OFF, the STEP page's cursor stays where it
+                                                 * is when the keys are let go (KNOB 1 moves it); kept in the MIDI part */
+static uint8_t drum_preview;                    /* menu DRUM PREVIEW (2.7.1): 1 = ON, a drum sound picked with a knob is heard; OFF (the
+                                                 * default): silent, for live (ui_studio.c). Kept in the MIDI part (project.c) */
+UI_SMALL static uint32_t lights_word(void)
 {
     return (uint32_t)(q_filter & 15u) | (uint32_t)(q_boss1_seen != 0u) << 4 | (uint32_t)(q_ult_simple != 0u) << 5 | (uint32_t)(q_ult_seen & 7u) << 6 |
            (uint32_t)(rec_tempo != 0u) << 9 | (uint32_t)(rec_count != 0u) << 10 | (uint32_t)(usb_full != 0u) << 11 |
-           (uint32_t)(lights_sync % 3u) << 12 | (uint32_t)(q_var[2] != 0u) << 14 | (uint32_t)(q_var[3] != 0u) << 15 |
-           (uint32_t)(led_fx & 7u) << 16 | (uint32_t)(led_sp & 15u) << 19 | (uint32_t)(led_fd & 15u) << 23 | (uint32_t)(led_hold != 0u) << 27 | (uint32_t)(q_ult_fullscr == 0u) << 28 | 1u << 30 |       /* (bit 28 set = the band, as the older saves always had it) */ (uint32_t)(boot_mute != 0u) << 31 | (uint32_t)(q_warrior_ok != 0u) << 29;
+           (uint32_t)(lights_sync % 3u) << 12 | (uint32_t)(lights_mout != 0u) << 14 | (uint32_t)(lights_min == 1u) << 15 |
+           (uint32_t)(usb_serial != 0u) << 16 | (uint32_t)(vis_style % 12u) << 17 |
+           (uint32_t)(lights_min >= 2u && lights_min <= 17u ? lights_min - 1u : 0u) << 21 |   /* 2.6: CH n (n 1..16; 0 none) */
+           (uint32_t)(cpu1_off != 0u) << 26 |          /* 2ND CORE OFF (2.7: ON by default; 2.6 took 21..25) */
+           (uint32_t)(knob_accel_off != 0u) << 27 |    /* KNOB ACCEL OFF (2.7; 0 = ON, as before 2.7) */
+           (uint32_t)(usb_rate % 3u) << 28 |           /* USB RATE (2.7 beta; 0 = AUTO, as before) */
+           (uint32_t)(theme_on != 0u) << 30 |
+           (uint32_t)(rec_quant_off != 0u) << 31;      /* REC screen QUANT OFF (2.7, seq.c; 0 = ON, as before) */           /* COLOR on your theme (2.7; gfx.c; an older SLOOP shows palette) */
 }
-static void lights_from_word(uint32_t w)
+static void q_opts_load(void);
+UI_SMALL static void lights_from_word(uint32_t w)
 {
     q_filter = (uint8_t)(w & 15u);
     q_boss1_seen = (uint8_t)((w >> 4) & 1u);
     q_ult_simple = (uint8_t)((w >> 5) & 1u);
     q_ult_seen = (uint8_t)((w >> 6) & 7u);
-    q_ult_fullscr = (uint8_t)((((w >> 28) & 1u) == 0u) && ((w >> 30) & 1u));
     if (q_filter > 11u) q_filter = 0;
     rec_tempo = (uint8_t)((w >> 9) & 1u);       /* the REC screen: MODE, START (seq.c) */
     rec_count = (uint8_t)((w >> 10) & 1u);
     usb_full = (uint8_t)((w >> 11) & 1u);       /* menu USB AUDIO (fx.c) */
     lights_sync = (uint8_t)(((w >> 12) & 3u) % 3u);
-    q_var[2] = (uint8_t)((w >> 14) & 1u);       /* the bard / the red warrior (the colours follow: main.c felucca_init) */
-    q_var[3] = (uint8_t)((w >> 15) & 1u);
-    q_warrior_ok = (uint8_t)((w >> 29) & 1u);
-    boot_mute = (uint8_t)((w >> 31) & 1u);
-    if (!q_warrior_ok) q_var[3] = 0;               /* locked: the knight keeps the slot */
-    if ((w >> 30) & 1u) {                       /* older saves (and the first LED defaults): the new defaults stay */
+    if ((w >> 30) & 1u) {                       /* a save of FM1 Quest 0.2x (bit 30 was always set; SLOOP 2.6 stops at bit 25): the Quest options sat in bits 14-31 */
+        q_var[2] = (uint8_t)((w >> 14) & 1u);
+        q_var[3] = (uint8_t)((w >> 15) & 1u);
+        q_warrior_ok = (uint8_t)((w >> 29) & 1u);
+        if (!q_warrior_ok) q_var[3] = 0;
+        boot_mute = (uint8_t)((w >> 31) & 1u);
         led_fx = (uint8_t)((w >> 16) & 7u), led_sp = (uint8_t)((w >> 19) & 15u), led_fd = (uint8_t)((w >> 23) & 15u), led_hold = (uint8_t)((w >> 27) & 1u);
         if (led_fx > 5u) led_fx = 0;
+        q_ult_fullscr = 0;                         /* (the whole-screen ult is gone) */
+        lights_mout = lights_min = usb_serial = vis_style = 0;   /* (2.6's MIDI / USB SERIAL / visualiser: the defaults); q_opts_save moves it all to settings.zoom */
+        return;
     }
+    lights_mout = (uint8_t)((w >> 14) & 1u);    /* GLO > SYSTEM > MIDI (seq.c) */
+    lights_min = (uint8_t)((w >> 15) & 1u);     /* GLO > SYSTEM > IN (seq.c) */
+    if (((w >> 21) & 31u) >= 1u && ((w >> 21) & 31u) <= 16u)
+        lights_min = (uint8_t)(((w >> 21) & 31u) + 1u);   /* 2.6: CH n (an older SLOOP reads NOTES) */
+    usb_serial = (uint8_t)((w >> 16) & 1u);
+    vis_style = (uint8_t)(((w >> 17) & 15u) % 12u);   /* the visualiser (ui_vis.c); 0 in 2.3 = OSCILLOSCOPE */     /* menu USB SERIAL (usb.c usb_cdc_on, at the next start); 0 in 2.3 = OFF */
+    cpu1_off = (uint8_t)((w >> 26) & 1u);       /* menu 2ND CORE (ui_menu.c); 2.7: bit 26 set = OFF, so any older settings
+                                                 * word (2.6 and before: 0) reads as ON, the two-core SLOOP (an early 2.7 beta
+                                                 * set it for ON: that FM-1 reads OFF once) */
+    cpu1_units = cpu1_off ? 0 : -1;
+    knob_accel_off = (uint8_t)((w >> 27) & 1u);  /* menu KNOB ACCEL (2.7): an older word reads ON */
+    usb_rate = (uint8_t)(((w >> 28) & 3u) % 3u); /* menu USB RATE (2.7 beta): an older word reads AUTO */
+    theme_on = (uint8_t)((w >> 30) & 1u);
+    rec_quant_off = (uint8_t)((w >> 31) & 1u);  /* REC screen QUANT (2.7): an older word reads ON */        /* menu COLOR on your theme (2.7, gfx.c): shown once it is there */
+    q_opts_load();                              /* (declared below: its prototype) */
+}
+
+/* FM1 Quest: its options kept in settings.zoom (the lights word is SLOOP 2.6's: MIDI, USB SERIAL, visualiser), after the
+ * map / damage / boss-speed bits 0-4: 5, 6 the bard / red warrior variants, 7 the warrior is unlocked, 8 ULT ANIMATION = FULL,
+ * 9 BOOT SOUND off, 10 the LED options are set (else the defaults), 11-13 the KEYBOARD LED effect, 14-17 its speed,
+ * 18-21 its fade, 22 hold. q_opts_load runs with the lights word (project.c), q_opts_save before the settings are written */
+static void q_opts_load(void)
+{
+    uint32_t z = settings.zoom;
+    q_var[2] = (uint8_t)((z >> 5) & 1u);
+    q_var[3] = (uint8_t)((z >> 6) & 1u);
+    q_warrior_ok = (uint8_t)((z >> 7) & 1u);
+    if (!q_warrior_ok) q_var[3] = 0;               /* locked: the knight keeps the slot */
+    boot_mute = (uint8_t)((z >> 9) & 1u);
+    if ((z >> 10) & 1u) {                          /* older saves (and the first LED defaults): the new defaults stay */
+        q_ult_fullscr = 0;
+        led_fx = (uint8_t)((z >> 11) & 7u), led_sp = (uint8_t)((z >> 14) & 15u), led_fd = (uint8_t)((z >> 18) & 15u), led_hold = (uint8_t)((z >> 22) & 1u);
+        if (led_fx > 5u) led_fx = 0;
+    }
+}
+static void q_opts_save(void)
+{
+    settings.zoom = (settings.zoom & 0x1Fu) | (uint32_t)(q_var[2] != 0u) << 5 | (uint32_t)(q_var[3] != 0u) << 6 | (uint32_t)(q_warrior_ok != 0u) << 7 |
+                    (uint32_t)(q_ult_fullscr != 0u) << 8 | (uint32_t)(boot_mute != 0u) << 9 | 1u << 10 | (uint32_t)(led_fx & 7u) << 11 |
+                    (uint32_t)(led_sp & 15u) << 14 | (uint32_t)(led_fd & 15u) << 18 | (uint32_t)(led_hold != 0u) << 22;
 }
 
 static void settings_save(void);              /* project.c: flash copy (FELUCCA_FLASH) */
 static uint8_t settings_later;                 /* changed while playing: saved once stopped (project.c) */
 
-static void settings_init(void)
+UI_SMALL static void settings_init(void)
 {
     if (settings.magic != SETTINGS_MAGIC || settings.palette >= NPALETTES) {
         settings.magic = SETTINGS_MAGIC;

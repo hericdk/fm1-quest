@@ -1,0 +1,72 @@
+/* FM1.quest floating recorder: a Windows 98 window around the simulator's little screen. Move it by the title bar or anywhere on its body. */
+#fmrec{--v:112px;--w:calc(var(--v) + 56px);--vy:30px;--ink:#1e1418;--ed:0px;
+  --arrow:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='20' shape-rendering='crispEdges'%3E%3Cpath d='M1 1V16L5 12L7.5 18.5L10 17.5L7.5 11H12Z' fill='white' stroke='black'/%3E%3C/svg%3E") 1 1;
+  --wait:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='24' shape-rendering='crispEdges'%3E%3Cpath d='M4 1H16V4L11 12L16 20V23H4V20L9 12L4 4Z' fill='white' stroke='black' stroke-width='2'/%3E%3Cpath d='M7 5H13L10 10Z M10 15L14 21H6Z' fill='black'/%3E%3C/svg%3E") 10 12;
+  position:fixed;left:0;top:0;z-index:90;width:var(--w);font:400 12px/1.2 "Pixelify Sans",ui-monospace,monospace;color:#000;user-select:none;-webkit-user-select:none;cursor:var(--arrow),default}
+#fmrec *{box-sizing:border-box;cursor:inherit}
+#fmrec.busy,#fmrec.busy *{cursor:var(--wait),wait}
+#fmrec .fr-stage{position:relative;width:100%;height:calc(var(--v) + 204px + var(--ed))}
+#fmrec.review{--ed:44px}
+#fmrec .fr-win{position:absolute;inset:0;background:#c0c0c0;border:2px solid;border-color:#fff #404040 #404040 #fff;box-shadow:inset -1px -1px #808080,inset 1px 1px #dfdfdf;z-index:2}
+#fmrec .fr-title{height:20px;margin:2px;background:linear-gradient(90deg,#000080,#1084d0);color:#fff;font:700 12px/20px "Pixelify Sans",ui-monospace,monospace;padding:0 3px 0 6px;display:flex;justify-content:space-between;align-items:center;white-space:nowrap;overflow:hidden;touch-action:none}
+#fmrec .fr-title i{font-style:normal;display:flex;gap:2px}
+#fmrec .fr-title u{text-decoration:none;display:grid;place-items:center;width:16px;height:14px;background:#c0c0c0;border:1px solid;border-color:#fff #404040 #404040 #fff;color:#000;font:700 10px/1 monospace}
+#fmrec .fr-title u:active{border-color:#404040 #fff #fff #404040}
+#fmrec .fr-view{position:absolute;left:calc((var(--w) - var(--v)) / 2);top:var(--vy);width:var(--v);height:var(--v);image-rendering:pixelated;background:#000;z-index:4;outline:2px solid;outline-color:#808080 #fff #fff #808080}
+#fmrec.review .fr-view{cursor:var(--arrow),pointer}
+#fmrec .fr-ctl{position:absolute;left:8px;right:8px;top:calc(var(--vy) + var(--v) + 10px + var(--ed));height:28px;display:flex;align-items:center;gap:8px;z-index:8}
+#fmrec .fr-rec{width:26px;height:26px;border:2px solid #000;background:#d0463c;display:grid;place-items:center;padding:0;flex:none;box-shadow:inset 2px 2px #ff8a80,inset -2px -2px #7a1a14}
+#fmrec .fr-rec:active{box-shadow:inset 2px 2px #7a1a14}
+#fmrec .fr-rec i{display:block;width:9px;height:9px;background:#fff;border-radius:50%}
+#fmrec.rec .fr-rec{background:#8e1f1a}
+#fmrec.rec .fr-rec i{border-radius:0}
+#fmrec .fr-time{font:700 14px/1 "Pixelify Sans",monospace;min-width:44px;color:#000}
+#fmrec.rec .fr-time{color:#c01010}
+#fmrec .fr-meter{width:36px;height:14px;image-rendering:pixelated;background:#000;flex:none;margin-left:auto;border:2px solid;border-color:#808080 #fff #fff #808080}
+/* sound source: a 98 combo box with a readable list */
+#fmrec .fr-sel{position:absolute;left:8px;right:8px;top:38px;z-index:8}
+#fmrec .fr-selb{width:100%;height:28px;display:flex;align-items:center;justify-content:space-between;gap:6px;padding:0 3px 0 8px;font:400 14px "Pixelify Sans",monospace;color:#000;background:#fff;border:2px solid;border-color:#808080 #fff #fff #808080;box-shadow:inset 1px 1px #000}
+#fmrec .fr-selb span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+#fmrec .fr-selb i{font:400 9px/1 monospace;font-style:normal;width:20px;height:20px;display:grid;place-items:center;background:#c0c0c0;border:2px solid;border-color:#fff #404040 #404040 #fff;flex:none}
+#fmrec.open .fr-selb i{border-color:#404040 #fff #fff #404040}
+#fmrec .fr-list{display:none;position:absolute;left:0;right:0;top:100%;margin:0;padding:2px;list-style:none;background:#fff;border:2px solid #000;box-shadow:3px 3px 0 #0006;max-height:190px;overflow:auto}
+#fmrec.open .fr-list{display:block}
+#fmrec .fr-list li{padding:6px 8px;font:400 14px/1.15 "Pixelify Sans",monospace;color:#000;white-space:normal;overflow-wrap:anywhere}
+#fmrec .fr-list li:hover{background:#000080;color:#fff}
+#fmrec .fr-list li.on::before{content:"▶ ";font-size:10px}
+/* knobs: flat 2D dials with a tick scale and a filled value arc */
+#fmrec .fr-knobs{position:absolute;left:8px;right:8px;top:calc(var(--vy) + var(--v) + 84px + var(--ed));height:80px;display:flex;justify-content:space-around;align-items:flex-start;z-index:5;padding-top:4px;box-shadow:inset 1px 1px #808080,inset -1px -1px #fff}
+#fmrec.noedit .fr-knobs{pointer-events:none}
+#fmrec.noedit .fr-k{opacity:.4}
+#fmrec .fr-k{display:flex;flex-direction:column;align-items:center;gap:1px;width:52px;touch-action:none;outline:none}
+#fmrec .fr-k svg{display:block;overflow:visible}
+#fmrec .fr-k .kt path{stroke:#404040;stroke-width:1.5;fill:none}
+#fmrec .fr-k .kb{stroke:#808080;stroke-width:4;fill:none}
+#fmrec .fr-k .kv{stroke:#000080;stroke-width:4;fill:none}
+#fmrec .fr-k .kc{fill:#dfdfdf;stroke:#000;stroke-width:2}
+#fmrec .fr-k .kn path{stroke:#000;stroke-width:3;stroke-linecap:square;fill:none}
+#fmrec .fr-k:focus-visible .kc{fill:#fff6c8}
+#fmrec .fr-k span{font:700 10px/1 "Pixelify Sans",monospace;color:#000;letter-spacing:.03em}
+#fmrec .fr-k em{font:700 12px/1 "Pixelify Sans",monospace;font-style:normal;color:#000;display:block}
+/* review: the timeline (kept part, fades as slopes, the playhead) and the buttons, in the grey box under the video */
+#fmrec .fr-tl{display:none;position:absolute;left:calc((var(--w) - var(--v)) / 2);top:calc(var(--vy) + var(--v) + 5px);width:var(--v);height:10px;image-rendering:pixelated;z-index:6;outline:1px solid;outline-color:#808080 #fff #fff #808080}
+#fmrec.review .fr-tl{display:block}
+#fmrec .fr-edit{position:absolute;left:calc((var(--w) - var(--v)) / 2);top:calc(var(--vy) + var(--v) + 19px);width:var(--v);height:26px;z-index:6;display:flex;align-items:center;gap:4px}
+#fmrec .fr-edit .fr-sp{flex:1}
+#fmrec .fr-edit button{width:28px;height:24px;padding:0;display:grid;place-items:center;background:#c0c0c0;border:2px solid;border-color:#fff #404040 #404040 #fff;color:#000}
+#fmrec .fr-edit button svg{display:block;fill:currentColor}
+#fmrec .fr-edit button:active{border-color:#404040 #fff #fff #404040}
+#fmrec .fr-edit .fr-dl{width:34px;background:#000080;color:#fff}
+/* hover: every button lights up */
+#fmrec .fr-edit button:hover,#fmrec .fr-title u:hover,#fmrec .fr-selb:hover i{background:#dfe4f8}
+#fmrec .fr-edit .fr-dl:hover{background:#1084d0}
+#fmrec .fr-rec:hover{background:#ec5a4c}
+#fmrec.rec .fr-rec:hover{background:#b02820}
+#fmrec .fr-selb:hover{background:#f4f7ff}
+#fmrec .fr-k:hover .kc{fill:#fff}
+#fmrec .fr-selb.ph span{color:#606070;font-size:11px;text-overflow:clip}
+#fmrec .fr-busy{position:absolute;left:calc((var(--w) - var(--v)) / 2);top:var(--vy);width:var(--v);height:var(--v);z-index:7;background:#000c;color:#f0c860;display:none;place-items:center;font:700 12px "Pixelify Sans",monospace;text-align:center}
+#fmrec.busy .fr-busy{display:grid}
+#fmrec.min .fr-view,#fmrec.min .fr-edit,#fmrec.min .fr-knobs,#fmrec.min .fr-tl{display:none}
+#fmrec.min .fr-stage{height:100px}
+#fmrec.min .fr-ctl{top:28px}

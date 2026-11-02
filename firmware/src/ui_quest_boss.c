@@ -16,6 +16,7 @@ static uint8_t q_ult_dealt, q_ult_shown;        /* q_ult_shown: bit per hero, th
 static uint8_t q_ult_art_open;
 static uint8_t q_ult_art = 255;                 /* the hero whose picture is on screen (255: none) and since when */
 static uint32_t q_ult_art_t0;
+#define QULT_MS 4000u                              /* every ult lasts this long, all its frames (it was 10 s) */
 static uint32_t q_def_t0;                        /* when an ult left the boss with his guard down (8 s of more damage) */
 static struct { uint32_t t0; int16_t x; uint16_t v; uint8_t hero; } q_dn[6];
 
@@ -27,8 +28,8 @@ static UI_NOINLINE uint32_t boss_max(void)
 /* who is in front of the party: slimes most of the time (green, blue, grey), the Red Wyvern now and then, a goblin (axe, archer) rarely */
 static UI_NOINLINE uint32_t boss_kind(void)       /* 0 slime, 1 wyvern, 2 goblin with an axe, 3 goblin archer */
 {
-    static const uint8_t K[8] = {0, 1, 0, 2, 0, 1, 0, 3};
-    return K[(boss_lv - 1u) & 7u];
+    static const uint8_t K[10] = {0, 1, 0, 2, 0, 1, 0, 3, 0, 4};          /* 4: the Bone King, in his own dungeon (0.3) */
+    return K[(boss_lv - 1u) % 10u];
 }
 static UI_NOINLINE uint32_t boss_slime_n(void) { return (boss_lv - 1u) >> 1; }                  /* the slimes in order: the colour is n % 3, the size n % 4 */
 static UI_NOINLINE const char *boss_name(void)
@@ -38,6 +39,7 @@ static UI_NOINLINE const char *boss_name(void)
     if (k == 1u) return "Red Wyvern";
     if (k == 2u) return "Goblin Axe";
     if (k == 3u) return "Goblin Bow";
+    if (k == 4u) return "Bone King";
     return SL[n % 3u];
 }
 /* ---- the player's own hits: keys pressed in a rhythm, a combo that grows (and a bigger hit for each 25) ---- */
@@ -284,10 +286,13 @@ static UI_NOINLINE void q_boss_pass(int32_t base)               /* one half of t
     for (i = 0; i < 4; i++) if (qh_ms[i] && now - qh_ms[i] < 90u) flash = 1;
     cv_begin(QW, QB_H / 2, QP(0));
     cv_oy = base;
-    p_R(0, 0, 240, 36 + QB_DY, RGB(0x3a, 0x2e, 0x5a));
-    q_stars(26, 0, 40 + QB_DY, 4242u);
-    cv_oy = base + QB_H - 84;
-    qb_castle();
+    if (boss_kind() == 4u) qb_cave(), cv_oy = base + QB_H - 84;                                               /* the skeleton boss: the dungeon is his place */
+    else {
+        p_R(0, 0, 240, 36 + QB_DY, RGB(0x3a, 0x2e, 0x5a));
+        q_stars(26, 0, 40 + QB_DY, 4242u);
+        cv_oy = base + QB_H - 84;
+        qb_castle();
+    }
     if (!boss_die_ms || (die / 120u) % 2u == 0u)                                                              /* it blinks out when defeated */
     {
         uint32_t bk = boss_kind(), sn = boss_slime_n();
@@ -303,10 +308,12 @@ static UI_NOINLINE void q_boss_pass(int32_t base)               /* one half of t
             else if (el < 2400) u = (el - 2000) * 256 / 400, wy = 16 + (100 - 16) * (u * u / 256) / 256;
             qb_wyvern(wx, wy, qsin((int32_t)(now / (el < 1500 ? 50u : 90u)) & 63), (int32_t)(now / 200u) % 3 * 3, 0, wsc);
         }
+        else if (bk == 4u)
+            dg_skel_s(bx, gy0 - 20, now, flash, 3);
         else
             qb_goblin(bk == 3u ? bx - 24 : bx, gy0 + 4, bk - 2u, boss_die_ms ? 16u + (die * 6u / 1400u > 5u ? 5u : die * 6u / 1400u) : gf, flash);
     }
-    q_pixelize(0, -60, 240, 100, 3);                                                                                  /* the castle and the boss as pixel art */
+    if (boss_kind() != 4u) q_pixelize(0, -60, 240, 100, 3);                                                          /* the castle and the boss as pixel art */
     cv_oy = base + QB_DY;                                                                                             /* the party and the effects: the 120-row layout, lower */
     if (buff) {                                                                                                /* the dome over the party: a dithered arc */
         int32_t a;
@@ -603,25 +610,23 @@ static UI_NOINLINE void quest_unlock_draw(void)
  * on the whole screen (menu ULT ANIMATION); the first time of each hero it plays through, after that any button skips it. ---- */
 static qrc_t qult_rc;
 static uint16_t qult_pr[128];
-static uint8_t qult_cur[1024], qult_prev[1024];
+#define QULT_MAX 2304u                            /* 48 x 48, one bit a pixel (all the ults are two-colour) */
+static uint8_t qult_curb[QULT_MAX / 8u], qult_prevb[QULT_MAX / 8u];
+#define QBIT(a, i) (((a)[(i) >> 3] >> ((i) & 7u)) & 1u)
+#define QSET(a, i, v) ((v) ? ((a)[(i) >> 3] |= (uint8_t)(1u << ((i) & 7u))) : ((a)[(i) >> 3] &= (uint8_t)~(1u << ((i) & 7u))))
 static uint32_t qult_frame;                      /* frames decoded so far */
 static uint32_t qult_idx(void);
-static UI_NOINLINE void qult_decode(void)         /* the next frame of the stream into qult_cur (W x H, from 24 x 24 with 3 colours to 32 x 32 with 2) */
+static UI_NOINLINE void qult_decode(void)         /* the next frame of the stream into qult_curb (W x H, 48 x 48 with 2 colours) */
 {
-    const uint32_t a = qult_idx(), W = QULT_W[a], H = QULT_H[a], bin = QULT_B[a];
+    const uint32_t a = qult_idx(), W = QULT_W[a], H = QULT_H[a];
     uint32_t x, y, i;
-    for (i = 0; i < W * H; i++) qult_prev[i] = qult_cur[i];
+    for (i = 0; i < QULT_MAX / 8u; i++) qult_prevb[i] = qult_curb[i];
     for (y = 0; y < H; y++)
         for (x = 0; x < W; x++) {
-            uint32_t l = x ? qult_cur[y * W + x - 1u] : 0u, u = y ? qult_cur[(y - 1u) * W + x] : 0u, v = 0;
-            if (bin) {
-                uint32_t ul = x && y ? qult_cur[(y - 1u) * W + x - 1u] : 0u, ur = y && x + 1u < W ? qult_cur[(y - 1u) * W + x + 1u] : 0u, pn = x + 1u < W ? qult_prev[y * W + x + 1u] : 0u;
-                v = qrc_bit(&qult_rc, &qult_pr[l | u << 1 | (uint32_t)qult_prev[y * W + x] << 2 | ul << 3 | ur << 4 | pn << 5]);
-            } else {
-                uint32_t c = (l * 3u + u) * 3u + qult_prev[y * W + x];
-                if (qrc_bit(&qult_rc, &qult_pr[c * 2u])) { v = 1; if (qrc_bit(&qult_rc, &qult_pr[c * 2u + 1u])) v = 2; }
-            }
-            qult_cur[y * W + x] = (uint8_t)v;
+            uint32_t l = x ? QBIT(qult_curb, y * W + x - 1u) : 0u, u = y ? QBIT(qult_curb, (y - 1u) * W + x) : 0u, v;
+            uint32_t ul = x && y ? QBIT(qult_curb, (y - 1u) * W + x - 1u) : 0u, ur = y && x + 1u < W ? QBIT(qult_curb, (y - 1u) * W + x + 1u) : 0u, pn = x + 1u < W ? QBIT(qult_prevb, y * W + x + 1u) : 0u;
+            v = qrc_bit(&qult_rc, &qult_pr[l | u << 1 | QBIT(qult_prevb, y * W + x) << 2 | ul << 3 | ur << 4 | pn << 5]);
+            QSET(qult_curb, y * W + x, v);
         }
     qult_frame++;
 }
@@ -643,10 +648,10 @@ static UI_NOINLINE void q_ult_art_step(void)      /* once a frame: start, advanc
         qult_rc.p = QULT_Z + QULT_ZO[a], qult_rc.range = 0xFFFFFFFFu, qult_rc.code = 0;
         for (i = 0; i < 5u; i++) qult_rc.code = (qult_rc.code << 8) | *qult_rc.p++;
         for (i = 0; i < 128u; i++) qult_pr[i] = 1024;
-        for (i = 0; i < 1024u; i++) qult_cur[i] = 0;
+        for (i = 0; i < QULT_MAX / 8u; i++) qult_curb[i] = 0;
         qult_frame = 0, q_ult_art_open = 1, newly = 0;
     }
-    target = el * QULT_N[a] / 10000u;                                           /* every ult lasts 10 s, all its frames */
+    target = el * QULT_N[a] / QULT_MS;                                          /* every ult lasts QULT_MS, all its frames */
     if (target >= QULT_N[a] || (skippable && newly)) {                          /* over (the whole of it counts as seen), or skipped */
         if (target >= QULT_N[a] && qs.screen == QSN_BOSS) q_ult_seen |= (uint8_t)seen_bit, settings_later = 1;
         q_ult_art = 255, q_ult_art_open = 0, q_ult_art_new = 0, cv_ban_h = 0, ui.force = 1;
@@ -657,7 +662,7 @@ static UI_NOINLINE void q_ult_art_step(void)      /* once a frame: start, advanc
 static UI_NOINLINE void qult_band(void)           /* drawn over the boss scene (cv_oy set by the caller): a small slanted black box above the heroes' heads, on the left, the animation at twice its size in it, black and white */
 {
     const uint16_t *pal = QULT_PAL[qult_idx()];
-    uint32_t el = fm1_ms - q_ult_art_t0, total = 10000u, k, lum[3], lo = 9999u, hi = 0u, on = 0u;
+    uint32_t el = fm1_ms - q_ult_art_t0, total = QULT_MS, k, lum[3], lo = 9999u, hi = 0u, on = 0u;
     int32_t prog = el < 220u ? (int32_t)el * 60 / 220 : total - el < 220u ? (int32_t)(total - el) * 60 / 220 : 60, xs, x, y;
     const int32_t X0 = 4, W = 60, Y0 = 74, H = 56, SL = 8;
     const uint16_t blk = RGB(0x08, 0x06, 0x0c), wht = RGB(0xff, 0xff, 0xff);
@@ -677,42 +682,12 @@ static UI_NOINLINE void qult_band(void)           /* drawn over the boss scene (
         int32_t px0 = X0 + (W - dw) / 2, py0 = Y0 - SL / 2 + (H - dw) / 2;
         for (y = 0; y < ah; y++)
             for (x = 0; x < aw; x++) {
-                uint32_t v = qult_cur[y * aw + x] % 3u;
+                uint32_t v = QBIT(qult_curb, (uint32_t)(y * aw + x));
                 int32_t x0 = x * dw / aw, x1 = (x + 1) * dw / aw, y0 = y * dw / ah, y1 = (y + 1) * dw / ah;
                 if ((on >> v) & 1u) cv_rect(px0 + x0, py0 + y0, x1 - x0, y1 - y0, wht);
             }
     }
 }
-static UI_NOINLINE void quest_ult_art_draw(void)  /* FULL: the whole screen, over everything; nothing else paints while it is up */
+static UI_NOINLINE void quest_ult_art_draw(void)  /* (the whole-screen ult is gone: only the small slanted band at the side, qult_band) */
 {
-    static uint8_t up;
-    if (q_ult_art == 255u || !q_ult_fullscr || qs.screen != QSN_BOSS) {
-        if (up) up = 0, cv_ban_h = 0, ui.force = 1;
-        return;
-    }
-    {
-        const uint16_t *pal = QULT_PAL[qult_idx()];
-        uint32_t half, x, y, el = fm1_ms - q_ult_art_t0, a = qult_idx();
-        int skippable = 0;                                                      /* (no skip any more) */
-        up = 1, cv_ban_h = 240;
-        if (!q_ult_art_new && el > 100u) return;                                  /* the picture on screen is still the right one */
-        q_ult_art_new = 0;
-        cv_ban_h = 0;
-        for (half = 0; half < 2u; half++) {
-            cv_begin(240, 120, pal[0]);
-            cv_oy = -(int32_t)(half * 120u);
-            for (y = 0; y < QULT_H[a]; y++)
-                for (x = 0; x < QULT_W[a]; x++) {
-                    int32_t x0 = (int32_t)(x * 240u / QULT_W[a]), x1 = (int32_t)((x + 1u) * 240u / QULT_W[a]), y0 = (int32_t)(y * 240u / QULT_H[a]), y1 = (int32_t)((y + 1u) * 240u / QULT_H[a]);
-                    cv_rect(x0, y0, x1 - x0, y1 - y0, pal[qult_cur[y * QULT_W[a] + x] % 3u]);
-                }
-            cv_oy = 0;
-            if (half == 1u && skippable) {                                      /* the way out: skip, bottom right */
-                cv_rect(186, 100, 54, 20, RGB(0x10, 0x0c, 0x16));
-                cv_text(196, 104, &FONT_P, "skip", RGB(0xff, 0xff, 0xff));
-            }
-            cv_blit(0, half * 120u);
-        }
-        cv_ban_h = 240;
-    }
 }

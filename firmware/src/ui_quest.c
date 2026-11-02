@@ -14,6 +14,7 @@
 #include "felucca_qgames.h"
 #include "felucca_qult.h"
 #include "felucca_qgob.h"
+#include "felucca_qmaga.h"
 static uint32_t str_hash(uint32_t h, const char *s);   /* ui_draw.c */
 
 /* ---- the TAVERN palette (README) ---- */
@@ -22,6 +23,8 @@ static const uint16_t QPAL_BASE[16] = {
     RGB(0x6a, 0x40, 0x30), RGB(0x4a, 0x3c, 0x48), RGB(0xa8, 0x9a, 0xa0), RGB(0xf2, 0xe2, 0xc4),
     RGB(0xc8, 0x44, 0x3c), RGB(0xe0, 0x8a, 0x3c), RGB(0xf0, 0xc8, 0x60), RGB(0x6a, 0x9a, 0x4a),
     RGB(0x4a, 0x78, 0xb0), RGB(0x8a, 0x6a, 0x9a), RGB(0xe0, 0x90, 0x90), RGB(0xf0, 0xb8, 0x90)};
+#define CD_T 64
+static uint8_t cd_tex[CD_T][CD_T] __attribute__((section(".pool")));   /* 4 KB of the pool, shared: the CDs (ui_quest_cd.c: HOME, no menu) and the games' cover decode (ui_quest_pages.c: the games menu) are never up together */
 static uint16_t QPAL[16];                                  /* what the scenes paint with: the TAVERN palette through the colour filter (q_filter_set) */
 #define QP(i) QPAL[(i) & 15u]
 
@@ -305,7 +308,7 @@ static uint32_t q_idle_seed = 1;          /* chosen each time the fight home is 
 static UI_NOINLINE void q_homedots(int32_t x, uint32_t n, uint32_t cur)
 {
     uint32_t k;
-    for (k = 0; k < n; k++) cv_rect(x, 3 + (int32_t)k * 5, 3, 3, k == cur ? Q_TEXT : Q_OFFHI);
+    for (k = 0; k < n; k++) cv_rect(x, n > 3u ? 2 + (int32_t)k * 4 : 3 + (int32_t)k * 5, 3, 3, k == cur ? Q_TEXT : Q_OFFHI);
 }
 static void q_hits_tick(void);            /* ui_quest_boss.c */
 /* the notes the four heroes play, as hits (ui_quest_boss.c fills them: the village, the boss and the pads read them) */
@@ -892,9 +895,12 @@ static UI_NOINLINE void q_scene_rec(int count)      /* rec ready / count-in: a K
     }
 }
 static UI_NOINLINE void q_scene_flush(void) { cv_blit(0, 19); }          /* the scenes draw into the canvas; the screen adds its overlay, then flushes */
+#include "ui_quest_stage.c"        /* STAGE: who plays (the PARTY effect from winampFM) */
 #include "ui_quest_scenes.c"
 #include "ui_quest_screens.c"
 #include "ui_quest_pages.c"
 #include "ui_quest_stock.c"
 #include "ui_quest_town.c"
+#include "ui_quest_flight.c"
 #include "ui_quest_boss.c"
+#include "ui_quest_cd.c"           /* the sound changed: the CDs (after No Man Sky FM / winampFM's tapes) */

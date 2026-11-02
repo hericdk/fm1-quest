@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>FM1 Quest · simulator</title>
+<script>window.__errs = []; addEventListener("error", e => window.__errs.push((e.message || "") + " @ " + String(e.filename || "").split("/").pop() + ":" + e.lineno)); addEventListener("unhandledrejection", e => window.__errs.push("promise: " + (e.reason && e.reason.message || e.reason)));</script>
+<link rel="stylesheet" href="fm1-sim.css">
+<script>/* ?embed: in the launch page's frame (the same whole simulator, its height sent up); ?lang=pt: Portuguese */
+(function () { const q = new URLSearchParams(location.search); if (q.has('embed')) document.documentElement.classList.add('embed'); window.WFM_LANG = (q.get('lang') || 'en').slice(0, 2); })();</script>
+<style>
+@font-face { font-family: "Pixelify Sans"; src: url(PixelifySans-400.ttf) format("truetype"); font-weight: 400 700; }
+:root { --z: 1; --bg: #121219; --panel: #1b1b26; --line: #2f2f42; --txt: #d4d4e0; --dim: #8a8aa0; --gold: #e8d898; --grn: #1ce61c; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--txt); font: 13px/1.45 system-ui, -apple-system, sans-serif; }
+button { font: inherit; color: inherit; background: #262636; border: 1px solid #3c3c54; border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+button:hover { border-color: var(--gold); }
+button.on { background: var(--grn); color: #041; border-color: var(--grn); }
+header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 16px; border-bottom: 1px solid var(--line); background: #17171f; position: sticky; top: 0; z-index: 40; }
+header h1 { margin: 0 8px 0 0; font: 600 16px "Pixelify Sans", monospace; letter-spacing: .06em; color: var(--gold); }
+header h1 small { color: var(--dim); font-size: 12px; }
+header .sp { flex: 1; }
+header a { color: var(--gold); text-decoration: none; border: 1px solid #3c3c54; border-radius: 6px; padding: 4px 10px; }
+#o-midi { color: var(--dim); font-size: 12px; }
+main { max-width: 1320px; margin: 0 auto; padding: 14px 16px 40px; display: grid; grid-template-columns: minmax(0, 1fr) 500px; gap: 16px; align-items: start; }
+@media (max-width: 1100px) { main { grid-template-columns: 1fr; } }
+#sim { position: relative; min-width: 0; }
+#sim .stool { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0 0; }
+#sim .stool .r1 { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+#sim .stool label { color: var(--dim); font-size: 12px; display: flex; gap: 4px; align-items: center; }
+#sim .stool { display: none !important; }   /* (only the status line under the model) */
+#sim { display: flex; flex-direction: column; }
+#sim .plate { display: none; }
+#sim:not(.is3d) .plate { display: block; }
+#sim:not(.is3d) .plate .lcdbox { position: relative; width: 480px; height: 480px; max-width: 100%; }
+.side { display: flex; flex-direction: column; gap: 12px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+.card h2 { margin: 0 0 8px; font: 600 13px "Pixelify Sans", monospace; letter-spacing: .08em; color: var(--gold); text-transform: uppercase; }
+#flat { display: block; width: 480px; max-width: 100%; height: auto; aspect-ratio: 1; image-rendering: pixelated; background: #000; border-radius: 4px; }
+.guide { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; font-size: 12.5px; }
+.guide b { color: #fff; font-weight: 600; white-space: nowrap; }
+.guide span { color: #c0c0d0; }
+.guide kbd { font: 11px ui-monospace, monospace; background: #26263a; border: 1px solid #44445c; border-bottom-width: 2px; border-radius: 3px; padding: 0 4px; color: #d0d0e0; }
+.k1 { color: #5a8ad0 !important; } .k2 { color: #7ab04e !important; } .k3 { color: #f0c860 !important; } .k4 { color: #e08a3a !important; }
+.note { color: var(--dim); font-size: 12px; margin: 8px 0 0; }
+#armed { color: var(--gold); font-size: 12px; }
+.demos { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--line); background: #15151d; }
+.demos b { font: 600 13px "Pixelify Sans", monospace; color: var(--gold); letter-spacing: .08em; margin-right: 4px; }
+.demos button.on { background: var(--gold); color: #1a1408; border-color: var(--gold); }
+.demos #demo-all { background: #f07818; border-color: #f07818; color: #1a0d02; font-weight: 600; padding: 5px 14px; }
+.demos #demo-all:hover { background: #ffb050; border-color: #ffb050; }
+.demos #demo-all.on { background: #d0463c; border-color: #d0463c; color: #fff; }
+.demos .vol { display: inline-flex; align-items: center; gap: 7px; padding: 3px 10px; border: 1px solid #3c3c54; border-radius: 6px; background: #20202e; color: #c8c8d8; }
+.demos .vk { --a: 0deg; width: 20px; height: 20px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #4a4a5e, #1c1c26); border: 1px solid #5a5a74; position: relative; cursor: ns-resize; touch-action: none; }
+.demos .vk::after { content: ""; position: absolute; left: 50%; top: 2px; width: 2px; height: 7px; margin-left: -1px; background: #f07818; transform-origin: 1px 8px; transform: rotate(var(--a)); }
+.demos .vk:hover, .demos .vk:focus-visible { border-color: #f07818; outline: none; }
+.demos #vol-m { width: 48px; height: 16px; image-rendering: pixelated; }
+#demo-cap { color: #c8c8d8; font-size: 12.5px; flex: 1 1 260px; }
+
+html.embed body { background: transparent; }   /* ?embed: the launch page shows the WHOLE simulator in a frame (the standard: header, model, pixel screen, how to play) */
+html.embed header { position: static; background: transparent; }
+html.embed main { padding-top: 10px; }
+html.embed, html.embed body { overflow: hidden; }
+</style>
+</head>
+<body>
+<header>
+  <h1>FM1 Quest <small>simulator · the real firmware (WebAssembly)</small></h1>
+  <button id="b-on">power on</button>
+  <button id="b-snd" class="on" title="sound on / off">sound</button>
+  <button id="b-midi" title="a MIDI keyboard or the FM-1 over USB">MIDI / FM-1 USB</button><span id="o-midi"></span>
+  <span id="armed"></span>
+  <span class="sp"></span>
+  <button id="b-reset" title="erase the simulator's saved memory (project, settings, the game's save) and restart">reset memory</button>
+</header>
+<div id="demos" class="demos">
+  <span id="demo-cap">Click the screen to power on. Press PLAY and the party sets out; play the keys, turn PRESETS to see the sounds as CDs, tap HOME on the tracks page for the next home.</span>
+</div>
+<main>
+  <div id="sim"></div>
+  <div class="side">
+    <div class="card">
+      <h2>The screen, pixel for pixel</h2>
+      <canvas id="flat" width="240" height="240"></canvas>
+      <p class="note">The same picture as on the model's glass: what the firmware draws on the 240×240 LCD.</p>
+    </div>
+    <div class="card">
+      <h2>How to play</h2>
+      <div class="guide">
+        <b>PLAY/STOP</b><span>the music, the party sets out <kbd>Space</kbd></span>
+        <b>keys</b><span>play notes <kbd>1</kbd>…<kbd>0</kbd>, <kbd>⇧5</kbd>…<kbd>⇧0</kbd></span>
+        <b>PRESETS</b><span>the hero's sound: the CDs roll by <kbd>;</kbd> <kbd>'</kbd></span>
+        <b>ALGORITHM</b><span>the hero: 1 · 2 · 3 · DRUMS <kbd>,</kbd> <kbd>.</kbd></span>
+        <b><span class="k1">K1</span> <span class="k2">K2</span> <span class="k3">K3</span> <span class="k4">K4</span></b><span>swing · level · steps · pan <kbd>⇧1</kbd>…<kbd>⇧4</kbd> + <kbd>↑</kbd><kbd>↓</kbd></span>
+        <b>HOME</b><span>on the tracks page: village → party → boss → flight <kbd>H</kbd></span>
+        <b>HOME held</b><span>the menu: Party (K1–K4: FORM, LEAD, TURN, STYLE), games, filter</span>
+        <b>REC</b><span>arms the boss fight, again closes the loop <kbd>R</kbd></span>
+        <b>ARP</b><span>held + key: the arpeggiator <kbd>A</kbd></span>
+        <b>OCT− / OCT+</b><span>the octave <kbd>Z</kbd> <kbd>X</kbd> · in the flight: boost / missiles</span>
+      </div>
+      <p class="note">Right click (or Shift+click) a button of the model to keep it held.</p>
+    </div>
+  </div>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="sim.js"></script>
+<script src="fm1-3d.js"></script>
+<script>
+(function () {
+  addEventListener('message', (e) => { const m = e.data || {}; if (m.fm1cmd === 'sound') document.querySelector('#b-snd').click(); else if (m.fm1cmd === 'midi') document.querySelector('#b-midi').click(); });
+  { let last = null; setInterval(() => { const on = document.querySelector('#b-snd').classList.contains('on'); if (on !== last && parent !== window) { last = on; parent.postMessage({ fm1state: { snd: on } }, '*'); } }, 400); }
+  const W = window.FM1W, $ = (s) => document.querySelector(s);
+  const flat = $('#flat').getContext('2d');
+  setInterval(() => { const src = document.querySelector('#sim .lcdbox canvas.cv'); if (src) { flat.imageSmoothingEnabled = false; flat.drawImage(src, 0, 0); } }, 50);
+  window.__cap = (z) => { const s = document.querySelector('#sim .lcdbox canvas.cv'), n = 240 * (z || 3), c = document.createElement('canvas'); c.width = c.height = n; const x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(s, 0, 0, n, n); return c.toDataURL('image/png'); };
+  $('#b-on').onclick = () => W.start();
+  document.addEventListener('wfm-power', () => { $('#b-on').textContent = 'on'; $('#b-on').classList.add('on'); });
+  $('#b-snd').onclick = (e) => { const m = !W.muted; W.setMute(m); e.target.classList.toggle('on', !m); };
+  $('#b-reset').onclick = () => { if (confirm('Erase the simulator memory and restart?')) W.resetFlash(); };
+  $('#b-midi').onclick = async () => { try { const n = await W.midiOn(); $('#o-midi').textContent = n ? n + ' MIDI input(s) on' : 'no MIDI device found'; $('#b-midi').classList.add('on'); } catch (e) { $('#o-midi').textContent = String(e.message || e); } };
+  if (window.WFM_LANG === 'pt') {                                      // (the launch page in Portuguese)
+    $('#demo-cap').textContent = 'Clique na tela para ligar. Aperte PLAY e o grupo parte; toque as teclas, gire PRESETS para ver os sons como CDs, toque HOME na página das faixas para a próxima home.';
+  }
+  if (document.documentElement.classList.contains('embed') && parent !== window) {   // (the frame grows with the page: no scroll inside it)
+    const post = () => parent.postMessage({ simHeight: document.documentElement.scrollHeight }, '*');
+    new ResizeObserver(post).observe(document.body); addEventListener('load', post); post();
+  }
+  addEventListener('wfm-armed', (e) => { $('#armed').textContent = 'arrows ↑↓ turn ' + e.detail.toUpperCase(); });
+})();
+</script>
+</body>
+</html>

@@ -17,7 +17,8 @@ static uint32_t led_demo_t0;                                  /* KEYBOARD LED: a
 #define LED_NFX 6u
 #define MI_DY 18                                   /* rows between two menu lines */
 
-static UI_NOINLINE void enc_drop(void)                             /* knob turns nobody takes */
+static void stage_knobs(void);                                    /* ui_quest_stage.c: the Party menu's knobs */
+static UI_SMALL void enc_drop(void)                             /* knob turns nobody takes */
 {
     uint32_t k;
     for (k = 0; k < NE; k++)
@@ -48,18 +49,18 @@ static int16_t gm_bpmx[2 * SNG_PER];                    /* the tempo picked for 
 static uint8_t imp_sel, imp_done;
 static uint32_t imp_t0;                                 /* REC pressed since (ms), 0 = not */
 static uint8_t flash_ok;                                /* (felucca.c) */
-static UI_NOINLINE int ed_smp_erase(uint32_t k, uint32_t all);      /* (editor.c) */
+static UI_SMALL int ed_smp_erase(uint32_t k, uint32_t all);      /* (editor.c) */
 static int ed_sng_erase(uint32_t sid);
-static UI_NOINLINE uint32_t imp_prog(void)                          /* 0..100 */
+static UI_SMALL uint32_t imp_prog(void)                          /* 0..100 */
 {
     uint32_t d = imp_t0 ? fm1_ms - imp_t0 : 0u;
     return imp_done ? 100u : d >= IMP_HOLD_MS ? 100u : d * 100u / IMP_HOLD_MS;
 }
-static UI_NOINLINE int imp_used(uint32_t i)                         /* 1 = something is stored in the item */
+static UI_SMALL int imp_used(uint32_t i)                         /* 1 = something is stored in the item */
 {
     return i < SMP_USER_SLOTS ? usr_nz[i] != 0u : sng_ok[i - SMP_USER_SLOTS] != 0u;
 }
-static UI_NOINLINE void imp_erase(uint32_t i)
+static UI_SMALL void imp_erase(uint32_t i)
 {
     char b[8] = "USR1";
     if (!flash_ok || !imp_used(i)) {
@@ -77,7 +78,7 @@ static UI_NOINLINE void imp_erase(uint32_t i)
     }
     ui_say("ERASED ", b);
 }
-static UI_NOINLINE void importer_input(void)
+static UI_SMALL void importer_input(void)
 {
     int32_t s = panel_enc(EN_PRESET);
     if (s)
@@ -95,9 +96,9 @@ static UI_NOINLINE void importer_input(void)
     }
 }
 
-static UI_NOINLINE void sx_leave(void);
-static UI_NOINLINE void sx_name(char *d, uint32_t i, uint32_t max);       /* ui_quest_screens.c */
-static UI_NOINLINE void menu_close(void)
+static UI_SMALL void sx_leave(void);
+static UI_SMALL void sx_name(char *d, uint32_t i, uint32_t max);       /* ui_quest_screens.c */
+static UI_SMALL void menu_close(void)
 {
     if (ui.menu == 9) sx_leave();
     if (song.playing || transport_req)
@@ -109,14 +110,14 @@ static UI_NOINLINE void menu_close(void)
     go_home();
 }
 
-static UI_NOINLINE uint32_t sx_brkit(uint32_t which)           /* the index (in the synthesised kits) of BRASIL (0) or BRASIL 2 (1) */
+static UI_SMALL uint32_t sx_brkit(uint32_t which)           /* the index (in the synthesised kits) of BRASIL (0) or BRASIL 2 (1) */
 {
     uint32_t i;
     for (i = DRUM_SAMPLED; i < DRUM_KITS; i++)
         if (str_eq(DRUM_KIT_NAMES[i], which ? "BRASIL 2" : "BRASIL")) return i - DRUM_SAMPLED;
     return 0;
 }
-static UI_NOINLINE void sx_enter(void)                          /* remember the track's sound as it is */
+static UI_SMALL void sx_enter(void)                          /* remember the track's sound as it is */
 {
     track_t *t = TSEL;
     uint32_t i;
@@ -134,7 +135,7 @@ static UI_NOINLINE void sx_enter(void)                          /* remember the 
     sx_open = 1;
     sx_cur = sx_tgt = 0, sx_pend = 0;
 }
-static UI_NOINLINE void sx_stop(void)                           /* silence, the solo and the transport back */
+static UI_SMALL void sx_stop(void)                           /* silence, the solo and the transport back */
 {
     track_t *t = TSEL;
     if (!sx_on) return;
@@ -144,7 +145,7 @@ static UI_NOINLINE void sx_stop(void)                           /* silence, the 
     song.solo = sx_solo;
     if (sx_resume) transport_req = 1, sx_resume = 0;
 }
-static UI_NOINLINE void sx_start(void)
+static UI_SMALL void sx_start(void)
 {
     sx_solo = song.solo;
     song.solo = (uint8_t)(1u << song.sel);
@@ -152,7 +153,7 @@ static UI_NOINLINE void sx_start(void)
     if (sx_resume) transport_req = 2;
     sx_on = 1, sx_t0 = fm1_ms, sx_st = 0, sx_note = 0;
 }
-static UI_NOINLINE void sx_apply(void)                          /* the highlighted sound, on the track (until leaving) */
+static UI_SMALL void sx_apply(void)                          /* the highlighted sound, on the track (until leaving) */
 {
     track_t *t = TSEL;
     trk_all_off(t);
@@ -166,7 +167,7 @@ static UI_NOINLINE void sx_apply(void)                          /* the highlight
     }
     sx_t0 = fm1_ms, sx_st = 0, sx_note = 0;
 }
-static UI_NOINLINE void sx_leave(void)
+static UI_SMALL void sx_leave(void)
 {
     track_t *t = TSEL;
     uint32_t i;
@@ -187,14 +188,14 @@ static const sxe_t SX_HELD[] = {{0, 60, 14}, {0, 63, 14}, {0, 67, 14}, {0, 70, 1
 static const sxe_t SX_STAB[] = {{0, 60, 2}, {0, 63, 2}, {0, 67, 2}, {0, 70, 2}, {8, 60, 2}, {8, 63, 2}, {8, 67, 2}, {8, 70, 2}, {16, 58, 2}, {16, 62, 2}, {16, 65, 2}, {16, 68, 2}, {24, 58, 2}, {24, 62, 2}, {24, 65, 2}, {24, 68, 2}};
 static const uint8_t SX_COMPS[10] = {0, 3, 6, 10, 12, 16, 19, 22, 26, 28};
 static const sxe_t SX_DRUM[] = {{0, 36, 1}, {2, 42, 1}, {3, 70, 1}, {4, 38, 1}, {6, 42, 1}, {7, 63, 1}, {8, 36, 1}, {10, 36, 1}, {10, 42, 1}, {11, 56, 1}, {12, 38, 1}, {14, 46, 1}, {15, 70, 1}};
-static UI_NOINLINE uint32_t sx_role(void)                       /* 0 bass, 1 melody, 2 held chords, 3 comping, 4 stabs, 5 beat */
+static UI_SMALL uint32_t sx_role(void)                       /* 0 bass, 1 melody, 2 held chords, 3 comping, 4 stabs, 5 beat */
 {
     static const uint8_t BY_KIND[8] = {0, 3, 2, 2, 1, 1, 4, 1};   /* BASS KEYS ORGN PAD LEAD PLCK STAB FX */
     if (is_drum(TSEL)) return 5u;
     if (sx_i >= sx_np) return 0u;                               /* a percussion instrument: a groove of hits */
     return sx_i < NBANK ? BY_KIND[BANK[sx_i].kind & 7u] : 1u;
 }
-static UI_NOINLINE void sx_hit(track_t *t, uint32_t note, uint32_t step, uint32_t len)
+static UI_SMALL void sx_hit(track_t *t, uint32_t note, uint32_t step, uint32_t len)
 {
     uint32_t k;
     if (is_drum(t)) { drum_on(note, 100); return; }
@@ -202,7 +203,7 @@ static UI_NOINLINE void sx_hit(track_t *t, uint32_t note, uint32_t step, uint32_
     for (k = 0; k < 8u; k++)
         if (!sx_hn[k]) { sx_hn[k] = (uint8_t)note, sx_ho[k] = (uint8_t)(step + len); return; }
 }
-static UI_NOINLINE void sx_tick(void)                           /* the phrase of this kind of sound, one time: 150 ms a step */
+static UI_SMALL void sx_tick(void)                           /* the phrase of this kind of sound, one time: 150 ms a step */
 {
     track_t *t = TSEL;
     uint32_t st, k, role, nev;
@@ -234,7 +235,7 @@ static uint32_t pm_flip_t0;                                   /* PARTY: when a c
 static uint8_t pm_flip_slot, pm_flip_prev;
 static void q_set_var(uint32_t slot, uint32_t v);
 /* menu: PRESETS moves, OCT+ confirms, OCT- cancels (ABOUT -> list -> close) */
-static UI_NOINLINE void menu_input(uint32_t pressed)
+static UI_SMALL void menu_input(uint32_t pressed)
 {
     int32_t s;
     uint32_t ok = (pressed >> panel.btn[B_OCTUP]) & 1u, back = (pressed >> panel.btn[B_OCTDN]) & 1u, sel = (pressed >> panel.btn[B_SCL]) & 1u;
@@ -383,6 +384,7 @@ static UI_NOINLINE void menu_input(uint32_t pressed)
                 }
             }
         }
+        if (ui.menu == 4) stage_knobs();                 /* KNOBS 1-4: FORM, LEAD, TURN, STYLE (ui_quest_stage.c) */
         enc_drop();
         return;
     }
@@ -406,11 +408,7 @@ static UI_NOINLINE void menu_input(uint32_t pressed)
         ok = 0;
     }
     if ((s != 0 || ok) && ui.menu == 1 && ui.menu_sel == MI_ULT) {      /* right ON, left OFF; OCT+ toggles: the animated ult, or only the simple effect */
-        {   /* BAND -> FULL -> OFF (right), the other way (left), OCT+ the next */
-            uint32_t m = q_ult_simple ? 2u : q_ult_fullscr ? 1u : 0u;
-            m = s < 0 ? (m + 2u) % 3u : (m + 1u) % 3u;
-            q_ult_simple = (uint8_t)(m == 2u), q_ult_fullscr = (uint8_t)(m == 1u);
-        }
+        q_ult_simple = (uint8_t)!q_ult_simple;               /* SIDE <-> OFF (the whole-screen ult is gone) */
         ok = 0;
     }
     if ((s != 0 || ok) && ui.menu == 1 && (ui.menu_sel == MI_DENS || ui.menu_sel == MI_BSPD)) {      /* few / normal / many, slow / normal / fast: right more, left less, OCT+ the next */

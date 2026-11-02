@@ -40,6 +40,8 @@ GENDIR = SRC / "build" / "genwav"
 CACHE = SRC / "build" / "gen_samples.cache"
 CC0 = SRC / "assets" / "samples-cc0"
 TR = 22050                                   # stored sample rate
+SET_RATE = {"BASS": 11025, "PIANO": 14000, "VIBES": 11025, "FLUTE": 11025, "HORNS": 11025,
+            "CAVAQ": 16000, "AGOGO": 16000, "SANFO": 16000}   # (rate plan from winampFM: a lower stored rate where the top is not missed)
 
 # set -> kind ("oneshot" decaying, "sus" looped sustain, "piano" its attack then a steady loop that the
 # envelope fades, "kit" one sample per key).
@@ -92,11 +94,15 @@ GM_ROLE_WORDS = [("bassdrum", "kick"), ("kick", "kick"), ("snare", "snare"), ("h
                  ("tomhi", "tomhi"), ("tom", "tom"),
                  ("rim", "rim"), ("cowbell", "cowbell"), ("tamb", "tamb"), ("shaker", "shaker"),
                  ("conga", "conga"), ("claves", "claves"), ("wood", "wood"), ("crash", "crash"), ("ride", "ride")]
-GM_KEEP = {"crash": 1.0, "ride": 1.0, "ohh": 0.6}
-GM_RATE = {"chh": 32000, "ohh": 32000, "crash": 32000, "ride": 32000}   # the metal keeps its top (else TR)
+GM_KEEP = {"crash": 0.45, "ride": 0.45, "ohh": 0.45,     # (0.3: the metal 0.6 -> 0.45 s and the hand percussion 0.45 -> 0.2..0.3 s: ~14 KB of flash for SLOOP 2.6)
+           "claves": 0.2, "cowbell": 0.3, "tamb": 0.3, "conga": 0.3}   # (SLOOP 2.5: the cymbals 1.0 -> 0.6 s, 12.8 KB of flash back;
+                                                      # the first 0.44 s as recorded, then a fade: GM_FADE)
+GM_RATE = {"chh": 16000, "ohh": 16000, "crash": 16000, "ride": 16000}   # the metal keeps its top (the rest of the kit: KIT_RATE)
+KIT_RATE = 16000                             # the kit's skins and wood: the top is not missed
 # an acoustic kit from the CC0 recordings (assets/samples-cc0/KIT: VCSL): the concert bass drum and the toms
 # get a shorter body (a kit's tuned-up, damped heads): their level falls as exp(-t / tau) after a hold
 GM_SHAPE = {"kick": (0.03, 0.13), "tomlo": (0.04, 0.22), "tomhi": (0.04, 0.2)}
+GM_FADE = {"crash": 0.16, "ride": 0.16}               # the cymbals fade out over their last 0.16 s (else 30 ms)
 # the balance of the kit (dB under full scale): the kick and the snare up front, the metal and the hand
 # percussion further back, as the synthesised kits (tools/level_drumkits.py); the click's wood block stays
 GM_GAIN = {"chh": -9, "ohh": -9, "crash": -8, "ride": -9, "shaker": -8, "tamb": -6, "conga": -4, "cowbell": -4,
@@ -129,9 +135,17 @@ def name_note(name):
     return (int(m.group(2)), NOTE[m.group(1)]) if m else None
 
 
+# SLOOP 2.7.2: sets that keep their first sound only, over the whole keyboard (SCRCH: the scratch, 3 KB; the backspin
+# and the rewind, 20 KB, made room for the NOTES editor). The set and its number stay: projects and presets unchanged
+ONE_SOUND = {"SCRCH"}
+
+
 def cc0_entries(setname, kind):
     """-> [(file name, int16 samples at TR, loop or None, root)]"""
+    R = SET_RATE.get(setname, TR)                # a lower stored rate where the top is not missed
     files = sorted((CC0 / setname).glob("*.wav"))
+    if setname in ONE_SOUND:
+        files = files[:1]
     out, conv = [], 1
     if kind != "kit" and not all(re.search(r"_m\d+\.wav$", p.name) for p in files):
         # octave convention of this set (C4 = 60 or C3 = 60): YIN votes, the names give the notes
@@ -163,29 +177,29 @@ def cc0_entries(setname, kind):
                     root = det
         else:
             root = hz_to_midi(detect_hz(x, sr))
-        x = resample(x, sr, TR)
+        x = resample(x, sr, R)
         keep = {"oneshot": 1.0, "sus": 0.95, "kit": 0.6, "piano": 1.0}[kind]
-        x = x[:int(keep * TR)]
+        x = x[:int(keep * R)]
         n = len(x)
         if kind == "piano":                          # the attack, then a steady tone the envelope (DEC) fades:
-            ls, le, xf, a0 = int(0.55 * TR), n - 1, int(0.08 * TR), int(0.30 * TR)   # long notes in 1 s
-            w = int(0.02 * TR)
+            ls, le, xf, a0 = int(0.55 * R), n - 1, int(0.08 * R), int(0.30 * R)   # long notes in 1 s
+            w = int(0.02 * R)
             env = [max(1e-6, (sum(v * v for v in x[max(0, i - w):i + w]) / (2 * w)) ** 0.5) for i in range(0, n, w)]
             ref = env[a0 // w]
             x = [v * (ref / env[min(len(env) - 1, i // w)] if i >= a0 else 1.0) for i, v in enumerate(x)]
-            ls = best_loop_start(x, le, xf, int(0.45 * TR), int(0.65 * TR))   # (the tone in phase: no dip)
+            ls = best_loop_start(x, le, xf, int(0.45 * R), int(0.65 * R))   # (the tone in phase: no dip)
             for i in range(xf):
                 a = i / xf
                 x[le - xf + i] = x[le - xf + i] * (1 - a) + x[ls - xf + i] * a
             loop = (ls, le)
         elif kind == "sus":                          # crossfaded sustain loop in the steady part
-            ls, le, xf = int(0.40 * TR), n - 1, int(0.06 * TR)
+            ls, le, xf = int(0.40 * R), n - 1, int(0.06 * R)
             for i in range(xf):
                 a = i / xf
                 x[le - xf + i] = x[le - xf + i] * (1 - a) + x[ls - xf + i] * a
             loop = (ls, le)
         else:
-            fade = int(0.08 * TR)
+            fade = int(0.08 * R)
             for i in range(fade):
                 x[n - fade + i] *= 1 - i / fade
             loop = None
@@ -245,7 +259,7 @@ def gm_kit_entry(role, path, rate=TR):
     while end > 64 and abs(x[end - 1]) < 0.004 * pk:
         end -= 1
     x = x[:end]
-    fade = min(len(x) // 4, int(0.03 * rate))
+    fade = min(len(x) // 4, int(GM_FADE.get(role, 0.03) * rate))
     for i in range(fade):
         x[len(x) - fade + i] *= 1 - i / fade
     g = 30000 / pk * 10 ** (GM_GAIN.get(role, 0) / 20) if path.parent.name == "KIT" else 30000 / pk
@@ -335,7 +349,7 @@ class Builder:
         """one GM-mapped kit: the CC0 acoustic kit"""
         z0 = len(self.zones)
         for role, path in gm_kit_sources(have_cc0).items():
-            rate = GM_RATE.get(role, TR) if path.parent.name == "KIT" else TR
+            rate = GM_RATE.get(role, KIT_RATE) if path.parent.name == "KIT" else TR
             smp = gm_kit_entry(role, path, rate)
             off, st = self.add(smp, len(smp))
             for lo, hi, root in GM_KIT[role]:
@@ -349,7 +363,7 @@ class Builder:
         for k, (_, s, loop, root) in enumerate(cc0_entries(name, kind)):
             ls, le = loop if loop else (len(s), len(s))
             off, st = self.add(s, ls)
-            entries.append(dict(off=off, n=len(s), ls=ls, le=le, looped=bool(loop), sr=TR,
+            entries.append(dict(off=off, n=len(s), ls=ls, le=le, looped=bool(loop), sr=SET_RATE.get(name, TR),
                                 root16=int(round(root * 16)), pred=st[0], idx=st[1],
                                 key=KIT_BASE + k if kind == "kit" else None))
         self.add_set(name, kind, entries)
@@ -462,7 +476,8 @@ def main(out):
         for name, kind in CC0_SETS:
             if kind != "kit":                       # the CC0 KIT feeds the GM kit
                 b.cc0_set(name, kind)
-    b.gm_kit(have_cc0)
+    if os.environ.get("FELUCCA_GM_KIT", "1") == "1":   # the sampled GM kit (ACOUSTIC, DEEP, TIGHT, BRIGHT, DUST); FELUCCA_GM_KIT=0 leaves it out
+        b.gm_kit(have_cc0)
     if os.environ.get("FELUCCA_SLICE") == "1":       # SLICE's BREAK: only when that engine is built
         b.slice_break()                             # last: the sets' offsets stay as they were
     text = b.header()

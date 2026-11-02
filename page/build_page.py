@@ -7,7 +7,8 @@
 writes OUT_DIR/ index.html (pt), en/index.html, es/index.html, assets/, media/, editor/ (backup, sounds, songs; the page's upload panel talks to it),
 emulator/ (quest/web: the real firmware in WebAssembly, build it first with `cd quest && CC=zig sh build.sh`), firmware/<package>, robots, sitemap.
 Nothing here links to the lab, the hub or any test page."""
-import hashlib, html as H, json, re, shutil, sys
+import hashlib
+import subprocess, html as H, json, re, shutil, sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -36,6 +37,10 @@ def build_sim(out):
     shutil.rmtree(SIM, ignore_errors=True)
     shutil.copytree(HERE / "sim-src", SIM)
     shutil.copy(wasm, SIM / "fm1quest.wasm")
+    STD = out / "sim-std"                                              # the standard simulator (the same page as No Man Sky FM and winampFM): header, 3D model, the screen pixel for pixel, how to play
+    shutil.rmtree(STD, ignore_errors=True)
+    shutil.copytree(HERE / "sim-std", STD)
+    shutil.copy(wasm, STD / "fm1quest.wasm")
     # Pages caches files for 10 minutes: version the glass script and the preview clips by content, so a new deploy is never shown stale
     h = hashlib.sha256()
     for f in sorted(SIM.glob("*")):
@@ -67,17 +72,9 @@ def main(out, pkg, version):
     if not (out / "firmware" / name).exists():
         shutil.copy(pkg, out / "firmware" / name)
     meta = {"version": version, "product": product, "pkg": "firmware/" + name, "sha256": hashlib.sha256(raw).hexdigest()}
-    for d in ("assets", "media", "arena"):
+    for d in ("assets", "media"):
         shutil.rmtree(out / d, ignore_errors=True)
         shutil.copytree(HERE / d, out / d)
-    av = hashlib.sha256()                                         # the arena's scripts and styles are versioned by content (Pages caches for 10 minutes)
-    for f in sorted((out / "arena").rglob("*")):
-        if f.is_file():
-            av.update(f.name.encode() + f.read_bytes())
-    arenav = av.hexdigest()[:10]
-    aix = (out / "arena" / "index.html").read_text(encoding="utf-8")
-    aix = re.sub(r'(src|href)="((?:vendor/)?[\w.]+\.(?:js|css))"', lambda mm: f'{mm.group(1)}="{mm.group(2)}?v={arenav}"', aix)
-    (out / "arena" / "index.html").write_text(aix, encoding="utf-8")
     for f in ("favicon.ico", "favicon-32.png", "apple-touch-icon.png", "android-chrome-192.png", "android-chrome-512.png"):
         shutil.copy(HERE / f, out / f)
     simv = build_sim(out)
@@ -138,10 +135,9 @@ def main(out, pkg, version):
         i18n_json = json.dumps(T, ensure_ascii=False).replace("</", "<\\/")
         html = html.replace("/*LIB*/", lib).replace("/*META*/", json.dumps(m2)).replace("/*I18N*/", i18n_json)
         if P:
-            html = re.sub(r'(src|href)="(assets|editor|firmware|media|arena)/', lambda mm: f'{mm.group(1)}="../{mm.group(2)}/', html)
+            html = re.sub(r'(src|href)="(assets|editor-full|editor|firmware|media)/', lambda mm: f'{mm.group(1)}="../{mm.group(2)}/', html)
             html = html.replace("url(assets/", "url(../assets/").replace('"sim/index.html?embed=1', '"../sim/index.html?embed=1')
         html = html.replace("sim/index.html?embed=1", "sim/index.html?embed=1&v=" + simv)
-        html = html.replace('arena/banner.js"', 'arena/banner.js?v=' + arenav + '"')
         html = html.replace("__BUILD__", simv).replace("__BUILDURL__", P + "build.json")
         d = out / path
         d.mkdir(parents=True, exist_ok=True)
@@ -158,6 +154,10 @@ def main(out, pkg, version):
     for f in ("fukiai.ttf", "FUKIAI-LICENSE.txt"):
         if (REPO / "web" / f).exists():
             shutil.copy(REPO / "web" / f, out / "editor" / f)
+    # the full editor (the SLOOP editor with FM1 Quest's name and look, tools/gen_editor_quest.py): backup, sounds, songs, drum kits, LIVE, in six languages
+    subprocess.run([sys.executable, str(REPO / "tools" / "gen_editor_quest.py")], check=True)
+    shutil.rmtree(out / "editor-full", ignore_errors=True)
+    shutil.copytree(REPO / "build" / "editor-full", out / "editor-full")
     (out / "build.json").write_text(json.dumps({"build": simv, "version": version}), encoding="utf-8")
     (out / "robots.txt").write_text("User-agent: *\nAllow: /\n", encoding="utf-8")
     (out / ".nojekyll").write_text("", encoding="utf-8")

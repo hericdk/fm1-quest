@@ -337,7 +337,7 @@ const CMD = { INFO: 1, GET: 2, SET: 3, DUMP: 4, DESC: 5, STEP_GET: 6, STEP_SET: 
   TRACK_PARAM: 31, TRACK_CHANGED: 32,
   DRUM_STEP: 33,
   BK_LIST: 34, BK_GET: 35, BK_PUT: 36,                /* v6: backup / restore */
-  SNG_BEGIN: 37, SNG_WRITE: 38, SNG_END: 39, SNG_ERASE: 40, SNG_INFO: 41 };   /* v7: songs of Piano Hero / FM Hero */
+  SNG_BEGIN: 80, SNG_WRITE: 81, SNG_END: 82, SNG_ERASE: 83, SNG_INFO: 84 };   /* FM1 Quest 0.3: songs of Piano Hero / FM Hero (0.21 used 37..41, which SLOOP 2.6 uses for parameter locks) */
 /* frames the device sends on its own (while WATCH is on); never replies */
 const PUSH = new Set([CMD.CHANGED, CMD.RELOAD, CMD.STEP_CHANGED, CMD.TRACK_CHANGED]);
 /* user preset bank: name 1..12 printable ASCII, a 16-step pattern of (note, flags 1 acc 2 slide 4 tie) */

@@ -114,7 +114,7 @@ starts, recovery needs [FM-1-transporter](https://github.com/kurogedelic/FM-1-tr
 
 ```
 cd quest && CC=zig sh build.sh                                  # web/fm1quest.wasm: this firmware, compiled with zig cc (pip install ziglang)
-python3 page/build_page.py site build/felucca.fwsc "0.2"    # site/: the page (pt, en, es), the 3D model, the editor, the package
+python3 page/build_page.py site build/felucca.fwsc "0.9"    # site/: the page (pt, en, es), the 3D model, the editor, the package
 python3 -m http.server 8000 --directory site                    # open http://localhost:8000/
 ```
 

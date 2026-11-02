@@ -24,13 +24,13 @@ int main(int argc,char **argv)
     for(i=0;i<DRUM_LANES;i++)assert(lane_of_note(LANE_NOTE[i])==i);
     /* Render the same hits through all five kits; each must be distinct,
      * finite and silent after its one-shots have finished. */
-    for(i=0;i<DRUM_KITS;i++) {
+    for(i=0;i<DRUM_USR;i++)   /* (the built-in kits: USR1..3 are the user slots) */ {
         memset(&drums,0,sizeof drums);drums.set=-2;
         TDRUM->p[P_E0]=(int16_t)i;
         drum_on(36,110);drum_on(38,100);drum_on(46,80);
         for(j=0;j<FS*2u/CTL;j++) {
             int32_t l[CTL]={0},r[CTL]={0},rev[CTL]={0};
-            drums_render(l,r,rev,CTL);
+            drums_render(l,r,rev,rev,CTL);
             for(k=0;k<CTL;k++){assert(l[k]>-131072 && l[k]<131072);energy[i]+=l[k]<0?-l[k]:l[k];}
         }
         assert(energy[i]>10000);
@@ -45,9 +45,9 @@ int main(int argc,char **argv)
         song.g[G_BPM]=120;song.g[G_CLOCK]=v==3?0:v==2?2:1;song.rec=v==0?1u:0u;rec_wait=0;   /* OFF / ON / REC */
         transport_req=1;age0=drums.age;
         for(j=0;j<(FS*2u-FS/4u)/CTL;j++) {               /* up to just before beat 4 */
-            uint32_t a=drums.age;
+            uint32_t c=click_n;                          /* (2.4.1: the click is its own voice, drums.c click_on) */
             mix_block(out,CTL);
-            if(drums.age!=a){hits++;for(k=0;k<NDRUM;k++)if(drums.v[k].age==drums.age && drums.v[k].vel>100)loud++;}
+            if(click_n!=c){hits++;loud+=click_acc;}
         }
         transport_req=2;events_block(CTL);
         if(v==0||v==2)assert(hits==4 && loud==1);

@@ -254,11 +254,11 @@ empty). Numbers are 5 × 7 bit (u35, LSB first); data is pack7.
 | 34 BK_LIST | — | rc (0 ok, 4 no flash), count, then per object: id, length u35, CRC-32 u35 (zlib). Takes a snapshot of the working project and the settings for GET |
 | 35 BK_GET | id, offset u35, count (2 × 7 bit, 1..256) | id, rc (0 ok, 1 arguments, 5 the snapshot is gone: LIST again), offset u35, count, pack7 data |
 | 36 BK_PUT | op 0 begin: id 0..7, length u35, CRC-32 u35 · op 1 data: id, offset u35, pack7 (≤ 256 bytes, in order) · op 2 commit: id · op 3 abort: id | op, id, rc: 0 ok, 1 arguments, 2 not a valid object (CRC, magic, sizes, ranges), 3 stop the song first (projects), 4 flash, 5 no begin for this object (or more than 15 s ago) |
-| 37 SNG_BEGIN | song 0..11 (0..5 Piano Hero, 6..11 FM Hero) | song, rc (0 ok, 1 flash). Erases the song's 4 KiB sector: it is empty from now on |
-| 38 SNG_WRITE | song, offset (3 × 7 bit, LSB first), pack7 data (≤ 256 bytes) | song, offset, rc: 0 ok, 1 arguments, 3 write, 4 no SNG_BEGIN. Offset ≥ 256 and a multiple of 256, offset + length ≤ 4096 |
-| 39 SNG_END | song, pack7 header (32 bytes: magic `"FSNG"` u32 0x474E5346, u16 version 1, u8 kind (0 Piano, 1 FM Hero), u8 0, name[12], u16 bpm, u16 notes, u32 data length = notes × 4, u32 CRC-32 of the data at +256) | song, rc: 0 ok, 1 size, 2 header, 3 data CRC, 4 flash, 5 invalid, 6 no BEGIN. The header is written last |
-| 40 SNG_ERASE | song | song, rc (erases the song's sector) |
-| 41 SNG_INFO | — | songs (12), songs per kind (6), bytes per song (v14: 3840), then per song: notes (v14, 0 = empty), name string (12), bpm (v14) |
+| 80 SNG_BEGIN | song 0..11 (0..5 Piano Hero, 6..11 FM Hero) | song, rc (0 ok, 1 flash). Erases the song's 4 KiB sector: it is empty from now on |
+| 81 SNG_WRITE | song, offset (3 × 7 bit, LSB first), pack7 data (≤ 256 bytes) | song, offset, rc: 0 ok, 1 arguments, 3 write, 4 no SNG_BEGIN. Offset ≥ 256 and a multiple of 256, offset + length ≤ 4096 |
+| 82 SNG_END | song, pack7 header (32 bytes: magic `"FSNG"` u32 0x474E5346, u16 version 1, u8 kind (0 Piano, 1 FM Hero), u8 0, name[12], u16 bpm, u16 notes, u32 data length = notes × 4, u32 CRC-32 of the data at +256) | song, rc: 0 ok, 1 size, 2 header, 3 data CRC, 4 flash, 5 invalid, 6 no BEGIN. The header is written last |
+| 83 SNG_ERASE | song | song, rc (erases the song's sector) |
+| 84 SNG_INFO | — | songs (12), songs per kind (6), bytes per song (v14: 3840), then per song: notes (v14, 0 = empty), name string (12), bpm (v14) |
 
 Songs are notes of 4 bytes from byte 256 of the sector: u16 start (1/48 beat, LE), u8 pitch (0..127), u8 length (1/12 beat). INFO (cmd 1) reports protocol version 7 when these commands exist.
 
@@ -285,3 +285,5 @@ written.
   work while the computer records.
 - **Safety.** Only `PROJECT` save, the sample-slot commands and `UP_PUT` / `UP_STORE` / `UP_ERASE` write flash, and only in
   Felucca's own storage; never the app or the update area.
+
+> **FM1 Quest 0.3:** the song commands moved from 37..41 to 80..84 (SLOOP 2.6 uses 37.. for parameter locks, nudges and fills). INFO reports protocol 10.

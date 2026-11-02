@@ -679,7 +679,7 @@ static UI_NOINLINE void quest_town_draw(void)
         cv_begin(240, 19, Q_BG);
         q_bar_bpm_pos(0);
         q_title_r(236, "Village", Q_HI);
-        q_homedots(150, 3, 0);
+        q_homedots(150, 4, 0);
         q_bar_end();
     }
     tw_party_strip();

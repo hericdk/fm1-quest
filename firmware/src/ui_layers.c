@@ -6,13 +6,19 @@
  *   EDIT  erase that sound / note (seq.c)  knobs: SHIFT  LENGTH x2 / half  TRANSPOSE   OCT- undo  OCT+ redo
  *   ARP   note repeat (seq.c roll)         knobs: RATE
  *   SEQ   steps 1..16 of the page          knobs: SOUND / NOTE  DIV  SWING  LENGTH;  a step key held:
- *         (black keys 1..4: pages)                SOUND / NOTE  LEVEL  RATCHET
- *   SCL   any key: the key of the song     knobs: CHORD  SCALE  KEYS  TRANSPOSE
- *   GLO   keys 1..4 mute,                  knobs: the levels of tracks 1..4
- *         the last white key: tap tempo
- *   SAVE  keys 1..4 play section A..D (on the next bar), 5..8 store the loop into A..D, 13 loop / song,
+ *         (black keys 1..4 or OCT- / OCT+: pages; SOUND / NOTE  LEVEL  RATCHET  NUDGE, PRESETS the value of a
+ *         2.7.1, the drum track: the black keys pick the sound, ui_studio.c drum_black_pick, OCT the pages)
+ *                                                 parameter lock, ALGORITHM its parameter (the sound parameter
+ *                                                 last touched first); OCT+ cycles the step's fill condition
+ *                                                 (normal, fill only, no fill), OCT- clears its nudge, locks and
+ *                                                 condition
+ *   SEL   any key: the key of the song     knobs: CHORD  SCALE  KEYS  TRANSPOSE
+ *   GLO   keys 1..4 mute, 5..8 solo,       knobs: the levels of tracks 1..4
+ *         9 fill while held, 10 fill the next bar, the last white key: tap tempo
+ *   SAVE  keys 1..4 play section A..D (on the next bar; two or more tapped while SAVE stays held: a chain of
+ *         them, looped, each for its pattern's bars), 5..8 store the loop into A..D, 13 loop / song,
  *         14 SONG REC (the order you play becomes the song), 16 the song page
- * The keys' part runs in the audio ISR (seq.c layer_now: no lag, no lost press); the SEQ, SCL and
+ * The keys' part runs in the audio ISR (seq.c layer_now: no lag, no lost press); the SEQ, SEL and
  * GLO keys come to the UI through seq.c lk_q. HOLD: REC held clears the track, SAVE held saves the
  * project (a ring fills; let go before and nothing happens). */
 static const uint8_t LAYER_BTN[LY_COUNT] = {NB, B_FX, B_EDIT, B_ARP, B_SEQ, B_SCL, B_GLO, B_SAVE};
@@ -21,11 +27,16 @@ static void section_store(uint32_t s);                  /* project.c */
 static void section_load(uint32_t s);
 static uint8_t sec_armed;                               /* store over a used section: the key again within 3 s */
 static uint32_t sec_armed_ms;
-#define TAP_MS 450u                                     /* a press shorter than this, untouched: a tap */
-#define SHOW_MS 140u                                    /* the layer shows after this (a tap does not flash it) */
+static uint8_t chain_tap[CHAIN_MAX], chain_taps;        /* the section keys tapped in this SAVE hold (the first
+                                                         * is asked for at once; two or more: a chain on release) */
+#define TAP_MS 1000u                                    /* a press shorter than this, untouched: a tap (after 2.8.3: was
+                                                         * 0.45 s: a firm press of FX, EDIT, ARP, SEQ, SEL, GLO or SAVE opened
+                                                         * nothing, the layer flashed and HOME stayed; clipper-fm1 #24) */
+#define SHOW_MS 350u                                    /* the layer shows after this (a tap does not flash it; 2.8.3: was 0.14 s,
+                                                         * a quick tap flashed it; a key or knob used shows it at once) */
 
 /* the ISR's view of the panel: the layers' buttons, OCT- / OCT+, REC / PLAY of a free take */
-static UI_NOINLINE void layers_init(void)
+UI_SMALL static void layers_init(void)
 {
     uint32_t l;
     for (l = LY_FX; l < LY_COUNT; l++)
@@ -34,19 +45,20 @@ static UI_NOINLINE void layers_init(void)
     dyn_bit[1] = 1u << panel.btn[B_OCTUP];
     ft_btn_mask = 1u << panel.btn[B_REC];
     ft_drop_mask = 1u << panel.btn[B_PLAY];
+    ui.lock_par = P_ED_FLT;                             /* the lock parameter until a sound knob is turned */
 }
 
-static UI_NOINLINE uint32_t key_of_white(uint32_t w) { return key_of_lane(w & 15u); }   /* white key w -> key index */
+UI_SMALL static uint32_t key_of_white(uint32_t w) { return key_of_lane(w & 15u); }   /* white key w -> key index */
 
 /* ------------------------------------------------------------ tools --- */
 /* EDIT layer knobs; each a step of one undo (the layer's hold) */
-static UI_NOINLINE void layer_undo_mark(track_t *t)
+UI_SMALL static void layer_undo_mark(track_t *t)
 {
     if (!ui.step_sess)
         ui.step_sess = (undo_sess += 4u) | 3u;
     undo_mark(t, ui.step_sess);
 }
-static UI_NOINLINE void pattern_rotate(track_t *t, int32_t d)       /* every step one later (d > 0) / earlier */
+UI_SMALL static void pattern_rotate(track_t *t, int32_t d)       /* every step one later (d > 0) / earlier */
 {
     uint32_t len = trk_len(t), i;
     step_t keep;
@@ -65,7 +77,7 @@ static UI_NOINLINE void pattern_rotate(track_t *t, int32_t d)       /* every ste
     }
     fm1_irq_on();
 }
-static UI_NOINLINE void pattern_length(track_t *t, int32_t d)       /* x2 (the pattern again after itself), or half */
+UI_SMALL static void pattern_length(track_t *t, int32_t d)       /* x2 (the pattern again after itself), or half */
 {
     uint32_t len = trk_len(t), i;
     layer_undo_mark(t);
@@ -84,7 +96,7 @@ static UI_NOINLINE void pattern_length(track_t *t, int32_t d)       /* x2 (the p
         ui_say("STEPS ", b);
     }
 }
-static UI_NOINLINE void pattern_transpose(track_t *t, int32_t d)    /* every note a semitone up / down (synth parts) */
+UI_SMALL static void pattern_transpose(track_t *t, int32_t d)    /* every note a semitone up / down (synth parts) */
 {
     uint32_t i, j;
     if (is_drum(t))
@@ -102,11 +114,11 @@ static UI_NOINLINE void pattern_transpose(track_t *t, int32_t d)    /* every not
  * sound's lane; synth: the pen, the chord / note played last); a set one goes when its key is let go,
  * unless a knob changed it meanwhile (level, ratchet, note) */
 static uint16_t step_pend_off;                         /* the step keys that clear their step when let go */
-static UI_NOINLINE int step_is_on(const track_t *t, uint32_t idx)
+UI_SMALL static int step_is_on(const track_t *t, uint32_t idx)
 {
     return is_drum(t) ? dstep_has(&t->dstep[idx], pen_lane) : step_on(&t->step[idx]);
 }
-static UI_NOINLINE void step_down(uint32_t w)
+UI_SMALL static void step_down(uint32_t w)
 {
     track_t *t = TSEL;
     uint32_t idx = ui.step_page * 16u + w;
@@ -138,7 +150,7 @@ static UI_NOINLINE void step_down(uint32_t w)
     fm1_irq_on();
     sync_reload = 1;
 }
-static UI_NOINLINE void step_up(uint32_t w)
+UI_SMALL static void step_up(uint32_t w)
 {
     track_t *t = TSEL;
     uint32_t idx = ui.step_page * 16u + w;
@@ -153,14 +165,33 @@ static UI_NOINLINE void step_up(uint32_t w)
         dstep_clr(&t->dstep[idx], pen_lane);
     else
         step_clear(&t->step[idx]);
+    if (!is_drum(t) || !dstep_mask(&t->dstep[idx])) {   /* an empty step keeps no lock, no nudge, no condition */
+        lock_del(t, idx, P_COUNT);
+        t->micro[idx] = 0;
+        step_fill_set(t, idx, FC_NORM);
+    }
     fm1_irq_on();
     sync_reload = 1;
 }
-/* KNOB 2 / 3 with step keys held: their level / ratchet (drums: the sound's lane; synth: every note) */
-static UI_NOINLINE void steps_held_edit(uint32_t knob, int32_t s)
+/* the drum sound the SEQ layer sets (KNOB 1): heard when it changes */
+UI_SMALL static void pen_lane_move(int32_t s)
+{
+    uint8_t l = (uint8_t)clamp(pen_lane + s, 0, DRUM_LANES - 1);
+    if (l != pen_lane)
+        drum_hear(l);                                   /* (2.7.1: menu DRUM PREVIEW ON only) */
+    pen_lane = l;
+}
+/* KNOB 1..4 with step keys held: their sound / note (drums: the sound's lane; synth: every note), level,
+ * ratchet, nudge (1/64 of a step, - early + late). knob 4 = PRESETS: a lock of ui.lock_par on them, made at
+ * the track's value, then moved */
+UI_SMALL static void steps_held_edit(uint32_t knob, int32_t s)
 {
     track_t *t = TSEL;
     uint32_t w, i;
+    /* the accelerated turn once for every step held (a second call would see no time pass: x3 on the others) */
+    int32_t sv = knob == 1u && !is_drum(t) ? accel(EN_K2, s, 126) : 0;
+    int32_t sk = knob == 4u ? accel(EN_PRESET, s, lock_desc(t, ui.lock_par % P_COUNT)->max -
+                                                  lock_desc(t, ui.lock_par % P_COUNT)->min) : 0;
     layer_undo_mark(t);
     step_pend_off &= (uint16_t)~ui.step_held;            /* (edited: kept when let go) */
     fm1_irq_off();
@@ -168,6 +199,18 @@ static UI_NOINLINE void steps_held_edit(uint32_t knob, int32_t s)
         uint32_t idx = ui.step_page * 16u + w;
         if (!((ui.step_held >> w) & 1u) || idx >= trk_len(t))
             continue;
+        if (knob == 3u) {                                 /* NUDGE: the whole step (drums: every lane) */
+            t->micro[idx] = (int8_t)clamp(t->micro[idx] + s, MICRO_MIN, MICRO_MAX);
+            continue;
+        }
+        if (knob == 4u) {                                 /* LOCK (PRESETS): ui.lock_par on this step */
+            uint32_t id = ui.lock_par % P_COUNT;
+            int k = lock_find(t, idx, id, 0);
+            int32_t v = k >= 0 ? t->lock[k].val : t->p[id];
+            if (!lock_set(t, idx, id, v + sk))
+                ui_message(p_lockable(id) ? "NO LOCK LEFT" : "NOT LOCKABLE");
+            continue;
+        }
         if (is_drum(t)) {
             dstep_t *d = &t->dstep[idx];
             uint32_t lv = dstep_lvl(d, pen_lane), rt = dstep_rat(d, pen_lane);
@@ -182,6 +225,13 @@ static UI_NOINLINE void steps_held_edit(uint32_t knob, int32_t s)
             step_t *st = &t->step[idx];
             if (!step_on(st))
                 continue;
+            if (knob == 1u) {                             /* VEL (2.6): the step's velocity, 1..127; every note */
+                int32_t v = clamp((int32_t)step_vel_shown(st) + sv, 1, 127);   /* at it (NORM) */
+                st->vel = (uint8_t)v;
+                st->lvl = 0;
+                st->flags &= (uint8_t)~SF_ACCENT;         /* (ACC would play it at 127) */
+                continue;
+            }
             for (i = 0; i < st->n; i++) {
                 uint32_t sh = 2u * i, lv = (st->lvl >> sh) & 3u, rt = (st->rat >> sh) & 3u;
                 if (knob == 0u) {
@@ -200,9 +250,64 @@ static UI_NOINLINE void steps_held_edit(uint32_t knob, int32_t s)
     fm1_irq_on();
     sync_reload = 1;
 }
+/* ALGORITHM with step keys held: the lock parameter, through the lockable ones (the drum track: not the
+ * engine parameters it has no use for), wrapping round */
+UI_SMALL static void lock_par_step(int32_t s)
+{
+    const track_t *t = TSEL;
+    uint32_t id = ui.lock_par % P_COUNT, guard = P_COUNT;
+    do {
+        id = (id + (uint32_t)P_COUNT + (uint32_t)(s > 0 ? 1 : -1)) % P_COUNT;
+    } while (guard-- && (!p_lockable(id) || lock_desc(t, id)->max <= lock_desc(t, id)->min ||
+                         (is_drum(t) && id > P_E0 && id <= P_E7)));
+    ui.lock_par = (uint8_t)id;
+}
+/* OCT- with step keys held: their nudge, locks and fill condition go */
+UI_SMALL static void steps_held_clear(void)
+{
+    track_t *t = TSEL;
+    uint32_t w, n = 0;
+    layer_undo_mark(t);
+    step_pend_off &= (uint16_t)~ui.step_held;
+    fm1_irq_off();
+    for (w = 0; w < 16u; w++) {
+        uint32_t idx = ui.step_page * 16u + w;
+        if (!((ui.step_held >> w) & 1u) || idx >= trk_len(t))
+            continue;
+        n += step_locked(t, idx) || step_fill(t, idx);
+        lock_del(t, idx, P_COUNT);
+        t->micro[idx] = 0;
+        step_fill_set(t, idx, FC_NORM);
+    }
+    fm1_irq_on();
+    sync_reload = 1;
+    ui_message(n ? "NUDGE, LOCKS, FILL CLEARED" : "NO NUDGE, LOCK OR FILL");
+}
+/* OCT+ with step keys held: their fill condition, round: normal -> fill only -> no fill (the first one's next) */
+UI_SMALL static void steps_held_fill(void)
+{
+    track_t *t = TSEL;
+    static const char *const MSG[3] = {"FILL: NORMAL", "FILL ONLY", "NO FILL"};
+    uint32_t w, v = 0, first = 1;
+    layer_undo_mark(t);
+    step_pend_off &= (uint16_t)~ui.step_held;
+    fm1_irq_off();
+    for (w = 0; w < 16u; w++) {
+        uint32_t idx = ui.step_page * 16u + w;
+        if (!((ui.step_held >> w) & 1u) || idx >= trk_len(t))
+            continue;
+        if (first)
+            v = (step_fill(t, idx) + 1u) % 3u;
+        first = 0;
+        step_fill_set(t, idx, v);
+    }
+    fm1_irq_on();
+    sync_reload = 1;
+    ui_message(MSG[v % 3u]);
+}
 
 /* ------------------------------------------------------------- GLO --- */
-static UI_NOINLINE void tap_tempo(void)
+UI_SMALL static void tap_tempo(void)
 {
     uint32_t now = fm1_ms, i, sum = 0;
     if (ui.tap_n && now - ui.tap_ms[(ui.tap_n - 1u) & 3u] > 2000u)
@@ -221,21 +326,31 @@ static UI_NOINLINE void tap_tempo(void)
     }
 }
 
-/* a key of the layers the UI runs (seq.c lk_q): SEQ steps, SCL key, GLO mix */
-static UI_NOINLINE void layer_key(uint32_t layer, uint32_t k, uint32_t down)
+/* a key of the layers the UI runs (seq.c lk_q): SEQ steps, SEL key, GLO mix */
+UI_SMALL static void layer_key(uint32_t layer, uint32_t k, uint32_t down)
 {
     int32_t w = punch_key(k);
+    if (layer >= LY_COUNT)
+        return;                                         /* (KB_GRID: the DRUMS grid page's, ui_studio.c) */
     if (!down) {
         if (w >= 0) {
             ui.step_held &= (uint16_t)~(1u << w);
             if (layer == LY_STEP)
                 step_up((uint32_t)w);
+            if (layer == LY_MIX && w == 8)
+                fill_held = 0;                              /* GLO + key 9 let go: the fill ends */
         }
         return;
     }
     switch (layer) {
     case LY_STEP:
-        if (w < 0) {                                    /* the first four black keys: pages 1..4 */
+        if (w < 0 && is_drum(TSEL)) {                   /* (2.7.1) the drum track: a black key picks the sound, unheard */
+            int32_t b = drum_black_of(k);
+            if (b >= 0)
+                drum_black_pick((uint32_t)b);
+            return;
+        }
+        if (w < 0) {                                    /* the first four black keys: pages 1..4 (OCT- / OCT+ too) */
             static const int8_t PG[12] = {-1, 0, -1, 1, -1, 2, -1, -1, 3, -1, -1, -1};
             if (k < 12u && PG[k] >= 0 && (uint32_t)PG[k] * 16u < trk_len(TSEL))
                 ui.step_page = (uint8_t)PG[k];
@@ -262,8 +377,17 @@ static UI_NOINLINE void layer_key(uint32_t layer, uint32_t k, uint32_t down)
             } else if (!((arrangement_ready() >> w) & 1u)) {
                 ui_say("EMPTY ", b);
             } else if (song.playing) {
-                live_req = (int8_t)w;
-                ui_say("NEXT: ", b);
+                if (!chain_taps) {                          /* the first tap: as ever, and any chain stops */
+                    fm1_irq_off();
+                    chain_n = 0;
+                    live_req = (int8_t)w;
+                    fm1_irq_on();
+                    ui_say("NEXT: ", b);
+                } else {
+                    ui.msg_t = 0;                           /* (the sub line shows the chain) */
+                }
+                if (chain_taps < CHAIN_MAX && (fm1_in.buttons & ly_bit[LY_SONG]))
+                    chain_tap[chain_taps++] = (uint8_t)w;   /* (SAVE held: more taps make a chain) */
             } else {
                 section_load((uint32_t)w);
                 ui_say("LOADED ", b);
@@ -304,8 +428,17 @@ static UI_NOINLINE void layer_key(uint32_t layer, uint32_t k, uint32_t down)
         return;
     }
     case LY_MIX:
-        if (w >= 0 && w < 4) {
+        if (k == 1u) {                                      /* (2.6) the black key F#3: MIDI LEARN on / off */
+            ml_toggle();
+        } else if (w >= 0 && w < 4) {
             trk[w].p[P_MUTE] = (int16_t)!trk[w].p[P_MUTE];
+        } else if (w >= 4 && w < 8) {
+            song.solo ^= (uint8_t)(1u << (w - 4));
+        } else if (w == 8) {
+            fill_held = 1;                                  /* FILL while held */
+        } else if (w == 9) {
+            fill_arm = (uint8_t)!fill_arm;                  /* FILL NEXT BAR (again: cancelled) */
+            ui_message(fill_arm ? "FILL: NEXT BAR" : "FILL BAR OFF");
         } else if (w == 15) {
             tap_tempo();
         }
@@ -315,12 +448,51 @@ static UI_NOINLINE void layer_key(uint32_t layer, uint32_t k, uint32_t down)
     }
 }
 
+/* SAVE let go (ui_input.c): two or more section taps while it was held play as a chain, from the one
+ * already asked for (the first), each for the bars of its pattern, looped; one tap was a plain jump */
+UI_SMALL static void chain_release(void)
+{
+    uint32_t i;
+    if (chain_taps >= 2u && song.playing && !arrangement_clock.running) {
+        fm1_irq_off();
+        for (i = 0; i < chain_taps && i < CHAIN_MAX; i++)
+            chain_sec[i] = chain_tap[i];
+        chain_i = 0;
+        chain_bars = (uint8_t)section_bars(chain_tap[0]);   /* (the first plays already, or is asked for) */
+        chain_n = (uint8_t)(chain_taps < CHAIN_MAX ? chain_taps : CHAIN_MAX);
+        fm1_irq_on();
+    }
+    chain_taps = 0;
+}
+/* "chain A B B C": the chain being built (SAVE held) or playing */
+UI_SMALL static void chain_sub(char *sub, uint32_t n)
+{
+    uint32_t i, m = chain_taps >= 2u ? chain_taps : chain_n, k = 5;
+    str_cpy(sub, "chain", n);
+    for (i = 0; i < m && i < CHAIN_MAX && k + 2u < n; i++) {
+        sub[k++] = ' ';
+        sub[k++] = (char)('A' + ((chain_taps >= 2u ? chain_tap[i] : chain_sec[i]) & 3u));
+    }
+    sub[k] = 0;
+}
+
 /* KNOB 1..4 while a layer is held: what the layer gives them (the page does not see them) */
-static UI_NOINLINE void layer_knobs(uint32_t layer)
+UI_SMALL static void layer_knobs(uint32_t layer)
 {
     uint32_t k;
     int32_t s;
     track_t *t = TSEL;
+    if (layer == LY_STEP && ui.step_held) {              /* a step held: PRESETS the lock's value, ALGORITHM its parameter
+                                                          * (neither browses a sound nor selects a track meanwhile) */
+        if ((s = panel_enc(EN_PRESET)) != 0) {
+            ui.layer_used = 1;
+            steps_held_edit(4, s);
+        }
+        if ((s = panel_enc(EN_ALGO)) != 0) {
+            ui.layer_used = 1;
+            lock_par_step(s);
+        }
+    }
     for (k = 0; k < 4u; k++) {
         if ((s = panel_enc(EN_K1 + k)) == 0)
             continue;
@@ -335,6 +507,8 @@ static UI_NOINLINE void layer_knobs(uint32_t layer)
                 song.g[G_DUST] = (int16_t)clamp(song.g[G_DUST] + accel(EN_K2, s, 127), 0, 127);
             else if (k == 2u)
                 song.g[G_DUCK] = (int16_t)clamp(song.g[G_DUCK] + accel(EN_K3, s, 127), 0, 127);
+            else                                        /* the selected track's FILTER (2.4) */
+                t->p[P_TFLT] = (int16_t)clamp(t->p[P_TFLT] + accel(EN_K4, s, 127), -64, 63);
             break;
         case LY_ERASE:
             if (k == 0u)
@@ -349,20 +523,20 @@ static UI_NOINLINE void layer_knobs(uint32_t layer)
                 song.g[G_ROLL] = (int16_t)clamp(song.g[G_ROLL] + s, 0, 4);
             break;
         case LY_STEP:
-            if (ui.step_held && k < 3u) {
+            if (ui.step_held) {                         /* SOUND / NOTE  LEVEL  RATCHET  NUDGE */
                 if (k == 0u && is_drum(t))
-                    pen_lane = (uint8_t)clamp(pen_lane + s, 0, DRUM_LANES - 1);
+                    pen_lane_move(s);
                 else
                     steps_held_edit(k, s);
             } else if (k == 0u) {
                 if (is_drum(t)) {
-                    pen_lane = (uint8_t)clamp(pen_lane + s, 0, DRUM_LANES - 1);
+                    pen_lane_move(s);
                 } else {
                     pen_note[0] = (uint8_t)clamp(pen_note[0] + s, 0, 127);
                     pen_n = 1;
                 }
             } else if (k == 1u) {
-                t->p[P_SDIV] = (int16_t)clamp(t->p[P_SDIV] + s, 0, 5);
+                t->p[P_SDIV] = (int16_t)clamp(t->p[P_SDIV] + s, 0, (int32_t)NDIV_STEP - 1);   /* (up to 2BAR) */
             } else if (k == 2u) {
                 t->p[P_SSWING] = (int16_t)clamp(t->p[P_SSWING] + accel(EN_K3, s, 100), 0, 100);
             } else {
@@ -396,6 +570,11 @@ static UI_NOINLINE void layer_knobs(uint32_t layer)
             break;
         }
     }
+    if (layer == LY_FX && (s = panel_enc(EN_SELECT)) != 0) {   /* (2.7.2) SELECT: the punch-in FX fade (GLO > ... ), not the
+                                                               * tempo while FX is held; shown top right (layer_screen_draw) */
+        song.g[G_FXFADE] = (int16_t)clamp(song.g[G_FXFADE] + s, 0, 15);
+        ui.layer_used = 1;
+    }
 }
 
 /* --------------------------------------------------------- drawing --- */
@@ -404,14 +583,17 @@ typedef struct {
     char lab[8];
     uint16_t bg, fg, top;        /* fill, text, the 3-pixel top band (0 = none) */
     uint8_t marks;               /* small marks under the label (a ratchet), 0 = none */
+    uint8_t tag;                 /* a dot in the top right corner (a nudge or a lock on the step), 0 = none */
+    uint8_t cond;                /* top left: the step's fill condition (FC_FILL an "F", FC_NOFILL an "x"), 0 = none */
 } tile_t;
 
 static void quest_layer_draw(uint32_t layer, const char *sub, const tile_t *tl, const char *const lab[4], const char *const val[4], const int32_t ratio[4]);
-static UI_NOINLINE void tiles_draw(const tile_t *tl, uint32_t *cache)
+UI_SMALL static void tiles_draw(const tile_t *tl, uint32_t *cache)
 {
     uint32_t r, c, sig = 7u;
     for (r = 0; r < 16u; r++)
-        sig = studio_hash(sig * 31u + tl[r].bg * 3u + tl[r].fg * 5u + tl[r].top * 7u + tl[r].marks, tl[r].lab);
+        sig = studio_hash(sig * 31u + tl[r].bg * 3u + tl[r].fg * 5u + tl[r].top * 7u + tl[r].marks + tl[r].tag * 11u + tl[r].cond * 13u,
+                          tl[r].lab);
     if (!ui.force && sig == *cache)
         return;
     *cache = sig;
@@ -427,15 +609,67 @@ static UI_NOINLINE void tiles_draw(const tile_t *tl, uint32_t *cache)
             te_text_c(x + 28, 9, t->lab, t->fg);
             for (m = 0; m < t->marks; m++)
                 cv_rect(x + 22 + (int32_t)m * 5, 27, 3, 3, t->fg);
+            if (t->tag)
+                cv_rect(x + 50, 7, 3, 3, t->fg);
+            if (t->cond == FC_FILL) {                   /* an F, 5 x 7: plays in a fill only */
+                cv_rect(x + 4, 7, 2, 7, t->fg);
+                cv_rect(x + 4, 7, 5, 2, t->fg);
+                cv_rect(x + 4, 10, 4, 2, t->fg);
+            } else if (t->cond == FC_NOFILL) {          /* an x, 7 x 7: silent in a fill */
+                int32_t d;
+                for (d = 0; d < 6; d++) {
+                    cv_rect(x + 4 + d, 7 + d, 2, 2, t->fg);
+                    cv_rect(x + 9 - d, 7 + d, 2, 2, t->fg);
+                }
+            }
         }
         cv_blit(0, 40 + r * 36);
     }
 }
 
-static UI_NOINLINE void layer_title(const char *name, const char *sub, uint16_t col, uint32_t *cache)
+/* the punch layer (2.6): the 27 keys as a keyboard, four rows of four white keys (as the other layers' 16
+ * tiles) with the black keys over them, between the white keys they sit between (the one after the
+ * row's last white key at its right end); a held effect lit white */
+#define PT_BW 52                                        /* a black key's tile */
+UI_SMALL static void punch_tiles_draw(const tile_t *tl, uint32_t *cache)
+{
+    uint32_t r, c, i, sig = 11u;
+    for (i = 0; i < PUNCH_NFX; i++)
+        sig = studio_hash(sig * 31u + tl[i].bg * 3u + tl[i].fg * 5u + tl[i].top * 7u, tl[i].lab);
+    if (!ui.force && sig == *cache)
+        return;
+    *cache = sig;
+    for (r = 0; r < 4u; r++) {
+        cv_begin(240, 36, C_BLACK);
+        for (c = 0; c < 4u; c++) {                      /* the white keys */
+            const tile_t *t = &tl[r * 4u + c];
+            int32_t x = 2 + (int32_t)c * 60;
+            cv_rect(x, 19, 56, 17, t->bg);
+            if (t->top)
+                cv_rect(x, 19, 56, 2, t->top);
+            te_text_c(x + 28, 20, t->lab, t->fg);
+        }
+        for (i = 16u; i < PUNCH_NFX; i++) {             /* the black keys of this row */
+            const tile_t *t = &tl[i];
+            int32_t w = punch_key(PUNCH_BLACK[i - 16u] - 1u), x;   /* the white key before it */
+            if ((uint32_t)w / 4u != r)
+                continue;
+            x = w % 4 < 3 ? 60 * (w % 4 + 1) - PT_BW / 2 : 238 - PT_BW;
+            if (t->bg == C_BLACK)
+                cv_rect(x, 0, PT_BW, 17, TE_G2);         /* an outline: a black key on the black screen */
+            cv_rect(x + 1, 1, PT_BW - 2, 15, t->bg);
+            te_text_c(x + PT_BW / 2, 1, t->lab, t->fg);
+        }
+        cv_blit(0, 40 + r * 36);
+    }
+}
+
+static char hdr_r[12] = "";                              /* (2.7.2) a value shown top right of a layer's header (FX: the fade) */
+UI_SMALL static void layer_title(const char *name, const char *sub, uint16_t col, uint32_t *cache)
 {
     uint32_t locked = ly_lock != LY_PLAY;
-    uint32_t sig = studio_hash(studio_hash(col, name), sub) + (ui.msg_t ? studio_hash(3u, ui.msg) : 0u) + locked * 7919u;
+    uint32_t sig = studio_hash(studio_hash(col, name), sub) + (ui.msg_t ? studio_hash(3u, ui.msg) : 0u) + locked * 7919u +
+                   (locked ? 0u : studio_hash(104729u, hdr_r));
     if (!ui.force && sig == *cache)
         return;
     *cache = sig;
@@ -446,16 +680,26 @@ static UI_NOINLINE void layer_title(const char *name, const char *sub, uint16_t 
         int32_t w = (int32_t)text_w(&FONT_S, "LOCK") + 8;
         cv_rect(236 - w, 4, w, 15, C_WHITE);
         cv_text(240 - w, 4, &FONT_S, "LOCK", C_BLACK);
+    } else if (hdr_r[0]) {                                /* (2.7.2) a right-aligned readout (FX: the fade), like a knob's */
+        cv_text(236 - text_w(&FONT_S, hdr_r), 4, &FONT_S, hdr_r, TE_G3);
     }
     cv_rect(0, 38, 240, 1, TE_G1);
     cv_blit(0, 0);
 }
 
+UI_SMALL static const char *lock_label(const track_t *t, uint32_t id)   /* the lock parameter's name, lower case */
+{
+    static char b[8];
+    te_lower(b, track_desc(t, id % P_COUNT)->label, 8);
+    return b;
+}
+
 static uint8_t layer_shown;                              /* the screen holds a layer (or a hold) */
-static UI_NOINLINE void layer_screen_draw(void)
+static const char *layer_sub_shown = "";                 /* the sub line last drawn (the host tests read it) */
+UI_SMALL static void layer_screen_draw(void)
 {
     static uint32_t head, tiles, foot;
-    static tile_t tl[16];
+    static tile_t tl[PUNCH_NFX];                        /* 16 (the punch layer: 27) */
     static char v[4][10], sub[24];
     const char *lab[4] = {"", "", "", ""}, *val[4] = {v[0], v[1], v[2], v[3]};
     int32_t ratio[4] = {-1, -1, -1, -1};
@@ -469,6 +713,7 @@ static UI_NOINLINE void layer_screen_draw(void)
     }
     for (i = 0; i < 4u; i++)
         v[i][0] = 0;
+    hdr_r[0] = 0;                                        /* (2.7.2) no header readout unless a layer sets one (FX: the fade) */
     memset(tl, 0, sizeof tl);
     for (i = 0; i < 16u; i++) {
         tl[i].bg = TE_G1;
@@ -478,35 +723,44 @@ static UI_NOINLINE void layer_screen_draw(void)
     sub[6] = (char)('1' + sel);
     sub[7] = 0;
     switch (layer) {
-    case LY_FX:                                         /* the 16 punch-in effects */
+    case LY_FX:                                         /* the 27 punch-in effects: 16 white keys, 11 black */
         col = TE_DRUM;
-        str_cpy(sub, "hold + key", sizeof sub);
-        for (i = 0; i < 16u; i++) {
-            static const char *const PSHORT[16] = {"loop 4", "loop 8", "loop16", "loop32", "stutt", "rev", "stop", "half",
-                                                   "low", "high", "phone", "crush", "alias", "gate", "echo", "wobble"};
-            int on = punch.req == (int8_t)i;
+        str_cpy(sub, thr_req == 3u ? "rev + echo throw" : thr_req == 2u ? "echo throw" : thr_req ? "rev throw" : "hold + key",
+                sizeof sub);
+        for (i = 0; i < PUNCH_NFX; i++) {
+            static const char *const PSHORT[PUNCH_NFX] = {"loop 4", "loop 8", "loop16", "loop32", "stutt", "rev", "stop",
+                                                          "half", "low", "high", "phone", "crush", "alias", "gate", "echo",
+                                                          "wobble", "k low", "k mid", "k high", "rewind", "oct up", "flange",
+                                                          "pan", "freeze", "loop8t", "mono", "fade"};
+            int on = punch.req == (int8_t)i, black = i >= 16u;
             str_cpy(tl[i].lab, PSHORT[i], 8);
-            tl[i].bg = on ? C_WHITE : TE_G1;
-            tl[i].fg = on ? C_BLACK : TE_G4;
-            tl[i].top = on ? 0 : TE_DIM[i / 4u];
+            tl[i].bg = on ? C_WHITE : black ? C_BLACK : TE_G1;
+            tl[i].fg = on ? C_BLACK : black ? TE_G3 : TE_G4;
+            tl[i].top = on || black ? 0 : TE_DIM[i / 4u];
         }
-        lab[0] = "filter", lab[1] = "dust", lab[2] = "duck";
+        lab[0] = "filter", lab[1] = "dust", lab[2] = "duck", lab[3] = "trk flt";
+        str_cpy(hdr_r, "fade ", sizeof hdr_r);          /* (2.7.2) SELECT sets the fade; shown top right */
+        fmt_int(hdr_r + 5, song.g[G_FXFADE]);
         {
             const char *u;
             param_format(&GP[G_FILT], song.g[G_FILT], v[0], &u);
             te_lower(v[0], v[0], 8);
             fmt_int(v[1], song.g[G_DUST] * 100 / 127);
             fmt_int(v[2], song.g[G_DUCK] * 100 / 127);
+            param_format(&TP[P_TFLT], t->p[P_TFLT], v[3], &u);
+            te_lower(v[3], v[3], 8);
         }
         ratio[0] = (song.g[G_FILT] + 64) * 1000 / 127;
         ratio[1] = song.g[G_DUST] * 1000 / 127;
         ratio[2] = song.g[G_DUCK] * 1000 / 127;
+        ratio[3] = (t->p[P_TFLT] + 64) * 1000 / 127;
         break;
     case LY_ERASE:
     case LY_ROLL: {                                     /* the keys' sounds: lit = held */
         uint32_t held = fm1_in.notes;
+        int mute = layer == LY_ERASE && is_drum(t) && er_mute;   /* (2.6) EDIT + a black key: the mutes */
         col = layer == LY_ERASE ? TE_RED : col;
-        str_cpy(sub, layer == LY_ERASE ? (song.playing ? "as it plays" : "every step") : "hold + key", sizeof sub);
+        str_cpy(sub, mute ? "mute: key = sound" : layer == LY_ERASE ? (song.playing ? "as it plays" : "every step") : "hold + key", sizeof sub);
         for (i = 0; i < 16u; i++) {
             uint32_t k = key_of_white(i), down = (held >> k) & 1u, present = 0, j;
             if (is_drum(t)) {
@@ -530,13 +784,24 @@ static UI_NOINLINE void layer_screen_draw(void)
             tl[i].bg = down ? (layer == LY_ERASE ? TE_RED : C_WHITE) : TE_G1;
             tl[i].fg = down ? C_BLACK : present ? C_WHITE : TE_G3;
             tl[i].top = present && !down ? (layer == LY_ERASE ? TE_RED : col) : 0;
+            if (mute) {                                 /* MUTE: a muted sound white on red, "off" */
+                uint32_t off = (drum_mute >> i) & 1u;
+                tl[i].bg = off ? TE_RED : TE_G1;
+                tl[i].fg = off ? C_WHITE : present ? C_WHITE : TE_G3;
+                tl[i].top = 0;
+                if (off)
+                    str_cpy(tl[i].lab, "off", 8);
+            }
         }
+        if (layer == LY_ERASE && is_drum(t) && !mute && !undo.valid)
+            str_cpy(sub, "black key: mute", sizeof sub);
         if (layer == LY_ERASE) {
             lab[0] = "shift", lab[1] = "length", lab[2] = is_drum(t) ? "" : "transp";
             str_cpy(v[0], "<  >", 8);
             fmt_int(v[1], t->p[P_SLEN]);
             str_cpy(v[2], is_drum(t) ? "" : "-  +", 8);
-            str_cpy(sub, undo.valid ? (undo.undone ? "oct+ redo" : "oct- undo") : sub, sizeof sub);
+            if (!mute)
+                str_cpy(sub, undo.valid ? (undo.undone ? "oct+ redo" : "oct- undo") : sub, sizeof sub);
         } else {
             lab[0] = "rate";
             str_cpy(v[0], N_ROLL[clamp(song.g[G_ROLL], 0, 4)], 8);
@@ -576,6 +841,8 @@ static UI_NOINLINE void layer_screen_draw(void)
                           : TE_G1;
             tl[i].fg = on ? C_BLACK : TE_G3;
             tl[i].marks = (uint8_t)(on ? rt : 0u);
+            tl[i].tag = (uint8_t)step_locked(t, idx);   /* a nudge or a lock on it */
+            tl[i].cond = (uint8_t)(step_fill(t, idx) % 3u);   /* its fill condition */
             if (song.playing && idx == t->seq_idx)
                 tl[i].top = C_WHITE;
             if ((ui.step_held >> i) & 1u)
@@ -587,6 +854,10 @@ static UI_NOINLINE void layer_screen_draw(void)
             p[2] = (char)('0' + (len + 15u) / 16u);
             str_cpy(sub, "page ", sizeof sub);
             str_cpy(sub + 5, p, 4);
+            if (is_drum(t))
+                str_cpy(sub + 8, "  oct: page", sizeof sub - 8u);   /* (2.7.1: the black keys are the sounds) */
+        } else if (is_drum(t)) {
+            str_cpy(sub, "black keys: sound", sizeof sub);
         }
         lab[0] = is_drum(t) ? "sound" : "note";
         if (is_drum(t))
@@ -594,16 +865,52 @@ static UI_NOINLINE void layer_screen_draw(void)
         else
             note_name(v[0], pen_note[0]);
         ratio[0] = is_drum(t) ? pen_lane * 1000 / 15 : pen_note[0] * 1000 / 127;
-        if (ui.step_held) {
-            lab[1] = "level", lab[2] = "ratchet";
+        if (ui.step_held) {                             /* the first step held: its nudge; the title: its lock */
+            uint32_t id = ui.lock_par % P_COUNT, w, idx;
+            int k;
+            for (w = 0; w < 16u && !((ui.step_held >> w) & 1u); w++)
+                ;
+            idx = (page * 16u + w) % NSTEP;
+            lab[1] = is_drum(t) ? "level" : "vel", lab[2] = "ratchet", lab[3] = "nudge";
             str_cpy(v[1], "-  +", 8);
+            if (!is_drum(t)) {                          /* (2.6) the first held step's velocity */
+                const step_t *st = &t->step[idx];
+                if (step_on(st)) {
+                    fmt_int(v[1], (int32_t)step_vel_shown(st));
+                    ratio[1] = (int32_t)step_vel_shown(st) * 1000 / 127;
+                } else {
+                    str_cpy(v[1], "--", 8);
+                }
+            }
             str_cpy(v[2], "x1 x4", 8);
+            {
+                int32_t m = t->micro[idx];
+                if (m > 0) {
+                    v[3][0] = '+';
+                    fmt_int(v[3] + 1, m);
+                } else {
+                    fmt_int(v[3], m);
+                }
+                ratio[3] = (m - MICRO_MIN) * 1000 / (MICRO_MAX - MICRO_MIN);
+            }
+            str_cpy(sub, "lock ", sizeof sub);          /* "lock flt +12" / "lock flt --" (PRESETS, ALGORITHM) */
+            str_cpy(sub + 5, lock_label(t, id), 8);
+            str_cpy(sub + str_len(sub), " ", 2);
+            k = lock_find(t, idx, id, 0);
+            if (k >= 0) {
+                const char *u;
+                char b[8];
+                param_format(lock_desc(t, id), t->lock[k].val, b, &u);
+                te_lower(sub + str_len(sub), b, 8);
+            } else {
+                str_cpy(sub + str_len(sub), "--", 3);
+            }
         } else {
             lab[1] = "div", lab[2] = "swing", lab[3] = "steps";
-            str_cpy(v[1], N_DIV[t->p[P_SDIV] % 6], 8);
+            str_cpy(v[1], N_SDIV[t->p[P_SDIV] % NDIV_STEP], 8);
             swing_str(v[2], t->p[P_SSWING]);
             fmt_int(v[3], t->p[P_SLEN]);
-            ratio[1] = t->p[P_SDIV] * 200;
+            ratio[1] = t->p[P_SDIV] * 1000 / (NDIV_STEP - 1);
             ratio[2] = t->p[P_SSWING] * 10;
             ratio[3] = (t->p[P_SLEN] - 1) * 1000 / 63;
         }
@@ -650,9 +957,9 @@ static UI_NOINLINE void layer_screen_draw(void)
         ratio[3] = (t->p[P_TRANS] + 24) * 1000 / 48;
         break;
     }
-    case LY_MIX: {                                      /* mute 1..4, solo 1..4, tap */
+    case LY_MIX: {                                      /* mute 1..4, solo 1..4, fill / fill bar, tap */
         col = C_WHITE;
-        str_cpy(sub, "mute  tap", sizeof sub);
+        str_cpy(sub, "mute  solo  fill  tap", sizeof sub);
         for (i = 0; i < 4u; i++) {
             int m = trk[i].p[P_MUTE] != 0;
             str_cpy(tl[i].lab, "mute 1", 8);
@@ -660,6 +967,13 @@ static UI_NOINLINE void layer_screen_draw(void)
             tl[i].bg = m ? TE_G2 : TE_COL[i];
             tl[i].fg = m ? TE_G3 : C_BLACK;
         }
+        str_cpy(tl[8].lab, "fill", 8);                  /* key 9: held = a fill; key 10: the next bar is one */
+        tl[8].bg = fill_now ? C_WHITE : TE_G1;
+        tl[8].fg = fill_now ? C_BLACK : TE_G4;
+        str_cpy(tl[9].lab, "bar", 8);
+        tl[9].bg = fill_bar_on ? C_WHITE : TE_G1;
+        tl[9].fg = fill_bar_on ? C_BLACK : TE_G4;
+        tl[9].top = fill_arm ? C_WHITE : 0;
         fmt_int(tl[15].lab, song.g[G_BPM]);
         tl[15].bg = song.playing && clk_pos < BEAT_U / 4u ? C_WHITE : TE_G2;
         tl[15].fg = tl[15].bg == C_WHITE ? C_BLACK : C_WHITE;
@@ -685,15 +999,19 @@ static UI_NOINLINE void layer_screen_draw(void)
             str_cpy(sub + str_len(sub), " bar ", 6);
             fmt_int(b, srec_n ? srec_e[srec_n - 1u].bars + 1 : 1);
             str_cpy(sub + str_len(sub), b, 6);
+        } else if (chain_taps >= 2u || chain_n) {
+            chain_sub(sub, sizeof sub);                 /* "chain A B B C" */
         } else {
             str_cpy(sub, arrangement_enabled ? "song mode" : srec ? "rec armed" : "play  store", sizeof sub);
         }
-        for (i = 0; i < 4u; i++) {
+        for (i = 0; i < 4u; i++) {                      /* (the chain's next entry framed as the one asked for) */
             int used = (ready >> i) & 1u, playing = live_sec == (int8_t)i && !arrangement_clock.running;
+            int next = live_req == (int8_t)i ||
+                       (chain_n && live_req < 0 && (chain_sec[((chain_i + 1u) % chain_n) % CHAIN_MAX] & 3u) == i);
             str_cpy(tl[i].lab, SL[i], 8);
             tl[i].bg = used ? (playing ? TE_COL[i] : TE_DIM[i]) : TE_G1;
             tl[i].fg = used ? C_BLACK : TE_G3;
-            tl[i].top = live_req == (int8_t)i ? C_WHITE : 0;
+            tl[i].top = next ? C_WHITE : 0;
             str_cpy(tl[4 + i].lab, "save A", 8);
             tl[4 + i].lab[5] = (char)('A' + i);
             tl[4 + i].bg = sec_armed == i + 1u ? TE_RED : TE_G1;

@@ -16,13 +16,22 @@ attacks, the tempo is how fast they walk, and a recording is a boss fight.**
 It is based on [SLOOP](https://github.com/isod89/sloop-fm1) by isod89, which is based on [Felucca](https://github.com/hugelton/Felucca) by Leo Kuroshita
 (Hügelton Instruments). GPL-3.0-only.
 
-> **Status: v0.2.** A beta: install at your own risk (see *Safe install* below). Projects, presets, samples and settings are kept.
+> **Status: v0.9.** A beta: install at your own risk (see *Safe install* below). Projects, presets, samples and settings are kept.
 
-## What is new in v0.2
+> **Notice (v0.9): the samples are stored at a lower rate** (11 to 16 kHz; the cymbals 16 kHz) so that the sampled drum kits, VIBES and HORNS fit again
+> next to SLOOP 2.6 and the 3D flight. The top end is a little duller; a few long samples were shortened. The flash is nearly full: any new feature has to make room first.
+
+## What is new in v0.9
 
 | | |
 |---|---|
-| **Ultimates** | notes charge each hero's ring; the ult plays that hero's own 32×32 animation (10 s) in a slanted window or fullscreen; it breaks the boss's defence |
+| **Ultimates** | notes charge each hero's ring; the ult plays that hero's own 32×32 animation (4 s) in a small slanted window beside the fight; it breaks the boss's defence |
+| **3D flight** | HOME's fourth screen: the mage over the boss's village (small houses, castle towers), homing lasers, a hexagon shield, orange missiles; she turns to the camera when you stop |
+| **3D CDs** | turn PRESETS or the drum kit and the sounds roll by as CDs |
+| **Party stage** | menu Party, knobs 1-4: FORM / LEAD / TURN / STYLE decide who plays; the arpeggio stays on when the sound changes |
+| **SLOOP 2.8.4** | the sound on both cores, 15 arpeggio modes, KBD HOLD, favourites, MIDI 3; arpeggio ORD SCL (one key plays the scale) |
+| **WAVE** | EDIT page for a SAMPLE engine on a USR slot: IN / OUT / LOOP / TUNE over the wave |
+| **Full editor** | the SLOOP editor with FM1 Quest's name and colours on the site, 6 languages (button Editor) |
 | **Monsters and bosses** | slimes (green, blue, grey), mini slimes, bats, goblins (axe, archer), the Red Wyvern (it arrives from far away and bites a hero) |
 | **Buffs, debuffs, abilities** | heal sparkles, protective dome, broken defence, combo from your key presses, damage numbers |
 | **The village** | a living village from dawn to night (pixel-art sky, guild board, crowd behaviours); camp scene when you stop |
@@ -30,7 +39,7 @@ It is based on [SLOOP](https://github.com/isod89/sloop-fm1) by isod89, which is 
 | **Brazilian sounds** | the BRASIL and BRASIL 2 kits, CAVAQUINHO, AGOGO, SANFONA and BERIMBAU, synthesised from scratch |
 | **Games** | Piano Hero and FM Hero, covers that flip like a card |
 | **Sound pages as places** | ENV forge, LFO sea, FX pedals, slicer towers (they shrink and grow), scale torches, and the rest in the same style |
-| **Options** | MAP ENEMIES, DAMAGE NUMBERS, BOSS SPEED, ULT ANIMATION (side / fullscreen / off), BOOT SOUND, FILTER, KEYBOARD LED |
+| **Options** | MAP ENEMIES, DAMAGE NUMBERS, BOSS SPEED, ULT ANIMATION (side / off), BOOT SOUND, FILTER, KEYBOARD LED |
 
 The full story, with video clips, is on the page.
 
@@ -55,7 +64,7 @@ tools/get_toolchain.sh            # JieLi's Linux toolchain (clang 4.0.1, pi32v2
 sh build.sh                       # build/felucca.bin, build/loader/ota.bin, build/felucca.fwsc
 SOAK_MIN=0 sh tests/run_tests.sh  # host tests (the UI renders every screen; DSP regressions; CPU budget)
 cd quest && CC=zig sh build.sh    # the same firmware as WebAssembly (the page's 3D model runs it)
-python3 page/build_page.py site build/felucca.fwsc "0.2"   # the page
+python3 page/build_page.py site build/felucca.fwsc "0.9"   # the page
 ```
 
 More in [BUILDING.md](BUILDING.md). `.github/workflows/build.yml` does all of it on every push and publishes the Pages site.

@@ -54,7 +54,9 @@ def encode(frames, W=24, H=24, binary=False):
     return e.finish()
 
 STEP = {"mago": 4, "archer": 4}               # (their frames are noise: half of them)
-GIF_STEP = 2                                 # a .gif replaces the strip: every 2nd frame, 32 x 32, 2 colours (dark 0, light 1)
+import os
+DIM = int(os.environ.get("ULT_DIM", "48"))                 # 0.3: 48 x 48 (5 LCD px a cell full screen, 1 in the 48 px band); the 0.21 had 32 x 32
+GIF_STEP = 2                                 # a .gif replaces the strip: every 2nd frame, DIM x DIM, 2 colours (dark 0, light 1)
 pals, nfr, blobs, offs, dims, bins = [], [], bytearray(), [0], [], []
 for n in ORDER:
     f = A / (n + ".png")
@@ -65,13 +67,13 @@ for n in ORDER:
         cols = None
         for i in range(0, gi.n_frames, STEP.get(n, 2 if gi.n_frames >= 200 else 1)):
             gi.seek(i)
-            im = gi.convert("L").resize((32, 32), Image.NEAREST)
+            im = gi.convert("L").resize((DIM, DIM), Image.LANCZOS)
             frames.append([1 if p >= 128 else 0 for p in im.getdata()])
-        z = encode(frames, 32, 32, True)
+        z = encode(frames, DIM, DIM, True)
         blobs += z
         offs.append(len(blobs))
         pals.append([((5 >> 3) << 11) | ((7 >> 2) << 5) | (10 >> 3), ((234 >> 3) << 11) | ((247 >> 2) << 5) | (255 >> 3), 0])
-        nfr.append(len(frames)); dims.append((32, 32)); bins.append(1)
+        nfr.append(len(frames)); dims.append((DIM, DIM)); bins.append(1)
         continue
     if not f.exists():
         pals.append([0, 0, 0]); nfr.append(0); offs.append(len(blobs)); dims.append((24, 24)); bins.append(0); continue

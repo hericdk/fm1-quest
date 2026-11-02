@@ -23,7 +23,7 @@
   @font-face { font-family: "Pixelify Sans"; src: url(assets/PixelifySans-400.ttf) format("truetype"); font-display: swap; }
   @font-face { font-family: "Jacquarda Bastarda 9"; src: url(assets/JacquardaBastarda9.ttf) format("truetype"); font-display: swap; }
   :root { --bg: #1e1418; --bg2: #170f13; --fg: #f2e2c4; --dim: #a89080; --tile: #3a2620; --line: #5a3a28; --gold: #c8963c; --hi: #f0c860;
-          --blue: #5a8ad0; --green: #7ab04e; --yellow: #f0c860; --orange: #e0803a; --red: #e0503c; --link: #f0c860; --grey: #8c8078; --top: 84px; }
+          --blue: #5a8ad0; --green: #7ab04e; --yellow: #f0c860; --orange: #e0803a; --red: #e0503c; --link: #f0c860; --grey: #8c8078; --top: 124px; }
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; scroll-padding-top: calc(var(--top) + 12px); }
   body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.6 "Pixelify Sans", ui-monospace, monospace; overflow-x: hidden; }
@@ -39,8 +39,8 @@
   [hidden] { display: none !important; }
 
   /* ---------- fixed top: logo centred, tools on the right (two separate pieces) ---------- */
-  #brand { position: fixed; z-index: 30; top: 0; left: 0; right: 0; height: var(--top); display: flex; justify-content: center; align-items: center; pointer-events: none;
-           background: linear-gradient(var(--bg) 62%, rgba(30,20,24,0)); }
+  /* the menu on top, the logo floating under it (transparent, never over the menu or the language switch) */
+  #brand { position: fixed; z-index: 30; top: 56px; left: 0; right: 0; height: 64px; display: flex; justify-content: center; align-items: center; pointer-events: none; background: none; }
   #brand a { pointer-events: auto; display: block; line-height: 0; }
   #brand img { height: 70px; width: auto; image-rendering: auto; filter: drop-shadow(0 3px 0 #000) drop-shadow(0 0 2px #000); }
   #tools { position: fixed; z-index: 40; top: 10px; right: 12px; display: flex; align-items: flex-start; gap: 8px; }
@@ -232,29 +232,31 @@
   /* scroll reveal (GSAP): hidden only while the script is alive, so nothing is lost without JavaScript */
   html.js .rv { opacity: 0; transform: translateY(46px); }
   @media (max-width: 1380px) {
-    :root { --top: 132px; }
-    #brand { align-items: flex-start; padding-top: 8px; height: var(--top); } #brand img { height: 54px; }
-    #tools { left: 0; right: 0; top: 70px; justify-content: center; flex-wrap: wrap; padding: 0 10px; } #prog { right: auto; left: 50%; transform: translateX(-50%); top: 48px; width: min(300px, 92vw); }
+    :root { --top: 122px; }
+    #brand { top: 58px; height: 58px; padding-top: 0; } #brand img { height: 54px; }
+    #tools { left: 0; right: 0; top: 8px; justify-content: center; flex-wrap: wrap; padding: 0 10px; } #prog { right: auto; left: 50%; transform: translateX(-50%); top: 48px; width: min(300px, 92vw); }
   }
   @media (max-width: 980px) { #modelo.with-dock { grid-template-columns: minmax(0, 1fr); grid-template-rows: 60vh auto; height: auto; } #dock { border-left: 0; border-top: 2px solid var(--gold); } #dockToggle, #modelo.min #dockToggle { right: 10px; } #modelo.with-dock.min { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; } }
   @media (max-width: 820px) { .tiles { grid-template-columns: repeat(2, 1fr); } .ncards { grid-template-columns: 1fr; } .ults { grid-template-columns: repeat(2, 1fr); } h1 { font-size: 28px; } #modelo { min-height: 460px; } }
-  @media (max-width: 560px) { #connect .t { display: none; } #connect { width: 38px; padding: 0; justify-content: center; } .mact { display: flex !important; } #modelo { height: 78vw; min-height: 300px; } #tools { gap: 6px; } .btn { padding: 0 9px; font-size: 14px; } #rollback span.t { display: none; } .vph b { font-size: 22px; } .vplay { width: 64px; height: 64px; } .vplay::after { border-left-width: 20px; border-top-width: 13px; border-bottom-width: 13px; } }
+  @media (max-width: 560px) { :root { --top: 168px; } #brand { top: 98px; height: 62px; } #brand img { height: 52px; } #connect .t { display: none; } #connect { width: 38px; padding: 0; justify-content: center; } .mact { display: flex !important; } #modelo { height: 78vw; min-height: 300px; } #tools { gap: 6px; } .btn { padding: 0 9px; font-size: 14px; } #rollback span.t { display: none; } .vph b { font-size: 22px; } .vplay { width: 64px; height: 64px; } .vplay::after { border-left-width: 20px; border-top-width: 13px; border-bottom-width: 13px; } }
   @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } html.js .rv { opacity: 1; transform: none; } }
 </style>
 <script>document.documentElement.classList.add("js");</script>
+<link rel="stylesheet" href="assets/fmrec.css">
 </head>
 <body>
 
-<div id="brand"><a href="#modelo" title="FM1 Quest"><img src="assets/logo.svg" alt="FM1 Quest"></a></div>
+<div id="brand"><img src="assets/logo.svg" alt="FM1 Quest"></div>
 
 <div id="tools">
   <button class="btn" id="rollback" hidden data-it="a_roll:title"><span class="t" data-i="t_rollback"></span>
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5V2L7 6.5 12 11V8a5 5 0 1 1-5 5H5a7 7 0 1 0 7-8z"/></svg></button>
   <nav id="lang" aria-label="Idioma / Language"><a href="{{HREF_pt}}" data-lang="pt" hreflang="pt" lang="pt">PT</a><a href="{{HREF_en}}" data-lang="en" hreflang="en" lang="en">EN</a><a href="{{HREF_es}}" data-lang="es" hreflang="es" lang="es">ES</a></nav>
-  <span id="ver" aria-label="Version">v0.21</span>
+  <span id="ver" aria-label="Version">v0.9</span><span id="based" style="font-size:11px;opacity:.7;margin-left:6px;white-space:nowrap">based on SLOOP 2.8.4</span>
   <a class="btn" id="gh" href="https://github.com/hericdk/fm1-quest" target="_blank" rel="noopener" data-it="a_gh:title">
     <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
     <span>GitHub</span><span class="star" id="stars" hidden>★ <b id="starn"></b></span></a>
+  <a class="btn" id="edbtn" href="editor-full/" style="background:#f0c860;color:#1a1016;border-color:#f0c860;font-weight:700">Editor</a>
   <button class="btn" id="install" disabled>Instalar no FM1</button>
   <button class="btn" id="connect"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v12H3zm2 2v8h14V8zm2 1h2v4H7zm4 0h2v4h-2zm4 0h2v4h-2z"/></svg><span class="t" data-i="ov_midi"></span></button>
   <button class="btn icon" id="sound" hidden aria-pressed="false" data-it="ov_snd_on:aria-label"><svg class="son" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 4V5L7 9zm13.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg><svg class="soff" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 4V5L7 9zm13.6 1.2l1.4 1.4 2.2-2.2 1.4 1.4-2.2 2.2 2.2 2.2-1.4 1.4-2.2-2.2-2.2 2.2-1.4-1.4 2.2-2.2-2.2-2.2z"/></svg></button>
@@ -308,7 +310,7 @@
     <button id="dockToggle" type="button" aria-expanded="true" data-it="d_hide:aria-label"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.6 5.6 7.2 7l5 5-5 5 1.4 1.4L15 12zM13.6 5.6 12.2 7l5 5-5 5 1.4 1.4L20 12z"/></svg></button>
     <div class="simcol">
       <iframe id="simframe" src="about:blank" data-it="a_model:title" allow="autoplay; midi"></iframe>
-      <script>(function(){var L=document.documentElement.lang.slice(0,2);document.getElementById("simframe").src="sim/index.html?embed=1&lang="+L})();</script>
+      <script>(function(){var L=document.documentElement.lang.slice(0,2);document.getElementById("simframe").src=(location.search.indexOf("sim=std")>=0?"sim-std/index.html?embed=1":"sim/index.html?embed=1")+"&lang="+L})();</script>
     </div>
     <aside id="dock" hidden aria-label="FM-1 USB">
       <div class="dock-in">
@@ -461,6 +463,7 @@
 })();
 </script>
 <script src="assets/js/tldr.js" defer></script>
+<script src="assets/js/fmrec.js" defer></script>
 <script type="module">
 /*LIB*/
 const $ = (id) => document.getElementById(id);
@@ -516,7 +519,7 @@ motion();
 $("vplay").addEventListener("click", () => {
   const f = document.createElement("iframe");
   f.src = "https://www.youtube-nocookie.com/embed/ITECI2cEHsU?autoplay=1&rel=0&cc_load_policy=1&cc_lang_pref=" + (LANG === "pt" ? "pt" : "en") + "&hl=" + LANG;
-  f.title = "FM1 Quest v0.21"; f.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"; f.allowFullscreen = true; f.referrerPolicy = "strict-origin-when-cross-origin";
+  f.title = "FM1 Quest v0.9"; f.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"; f.allowFullscreen = true; f.referrerPolicy = "strict-origin-when-cross-origin";
   $("vframe").replaceChildren(f); try { ga("video_play"); } catch (e) {}
 });
 
@@ -622,8 +625,8 @@ $("pv1").addEventListener("click", () => { bridgePost({ fm1cmd: "preview", k: TA
 });
 
 
-/* the three 64-bar training songs (STEPS, GROOVE, ARCADE): the same .mid files go to Piano Hero and FM Hero, slots 1-3 */
-const PACK = ["STEPS", "GROOVE", "ARCADE"], ROOTP = /\/(en|es)(\/|$)/.test(location.pathname) ? "../" : "";
+/* the two 64-bar training songs (STEPS, GROOVE): the same .mid files go to Piano Hero and FM Hero, slots 1-2 */
+const PACK = ["STEPS", "GROOVE"], ROOTP = /\/(en|es)(\/|$)/.test(location.pathname) ? "../" : "";
 [2, 3].forEach((p) => {
   $("pk" + p).addEventListener("click", async () => {
     if (upBusy) return; if (!confirm(tx("d_pack_q"))) return;

@@ -70,7 +70,7 @@ def arcade():
 
 out = sys.argv[1] if len(sys.argv) > 1 else 'page/media/songs'
 os.makedirs(out, exist_ok=True)
-for name, fn in (('STEPS', steps), ('GROOVE', groove), ('ARCADE', arcade)):
+for name, fn in (('STEPS', steps), ('GROOVE', groove)):   # (ARCADE was dropped in 0.3: flash)
     bpm, notes = fn()
     assert all(53 <= p <= 79 for _, p, _ in notes), name
     assert len(notes) <= 960, (name, len(notes))

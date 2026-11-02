@@ -4,6 +4,9 @@
 # SLOOP 2.0 (reviewed): analog +9 % (drive crossfade, phase reset), lofi +4 % (input clamp), slicer on
 # the sample-accurate clock (its divides are per step / per block, not per sample: the per-sample
 # loop has none), the mix out of the ISR into its own function (fm1_alnk0_irq calls it).
+# SLOOP 2.4: FM6 (fm6_op_run, fm6_op_fb: the per-sample operator loops; fm6_render: the voice's output loop)
+# are in FUNCS without a budget yet: the engine was ported on a host without the pi32v2 toolchain; the
+# next ./build.sh + BUDGET_UPDATE=1 adds their lines (until then they print "no budget", not a failure).
 analog_render 638
 digital_render 333
 phase_render 79

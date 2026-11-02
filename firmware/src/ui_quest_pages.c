@@ -8,22 +8,22 @@ static uint32_t pn_t0;                   /* when a key was last pressed (the del
 #define PS_Y1 194
 typedef struct { int16_t x0, y0, x1, y1; uint8_t div; } ps_r;
 typedef struct { const int32_t *k; int32_t a, b, c, d; uint32_t t; } ps_c;   /* k = the four ratios (0..1000), a..d = discrete values of the page, t = ms */
-static UI_NOINLINE uint32_t p_hs(uint32_t n) { return qhash(n * 7919u + 13u) & 1023u; }       /* 0..1023, a fixed random per n */
-static UI_NOINLINE int32_t p_sinr(int32_t rad_q1000) { int32_t i = (rad_q1000 * 64 / 6283) % 64; return qsin(i < 0 ? i + 64 : i); }
-static UI_NOINLINE int32_t p_cosr(int32_t rad_q1000) { return p_sinr(rad_q1000 + 1571); }
-static UI_NOINLINE int32_t p_sin(uint32_t t, uint32_t rad_x10) { return qsin((int32_t)(((t % 62832u) * rad_x10 / 982u) & 63u)); }   /* sin(t * rad), t in ms, rad / 10 */
-static UI_NOINLINE uint16_t p_shade(uint16_t c, uint32_t f)                                   /* c * f / 1000 */
+static UI_SMALL uint32_t p_hs(uint32_t n) { return qhash(n * 7919u + 13u) & 1023u; }       /* 0..1023, a fixed random per n */
+static UI_SMALL int32_t p_sinr(int32_t rad_q1000) { int32_t i = (rad_q1000 * 64 / 6283) % 64; return qsin(i < 0 ? i + 64 : i); }
+static UI_SMALL int32_t p_cosr(int32_t rad_q1000) { return p_sinr(rad_q1000 + 1571); }
+static UI_SMALL int32_t p_sin(uint32_t t, uint32_t rad_x10) { return qsin((int32_t)(((t % 62832u) * rad_x10 / 982u) & 63u)); }   /* sin(t * rad), t in ms, rad / 10 */
+static UI_SMALL uint16_t p_shade(uint16_t c, uint32_t f)                                   /* c * f / 1000 */
 {
     uint32_t r = ((c >> 11) & 31u) * f / 1000u, g = ((c >> 5) & 63u) * f / 1000u, b = (c & 31u) * f / 1000u;
     return (uint16_t)((r > 31u ? 31u : r) << 11 | (g > 63u ? 63u : g) << 5 | (b > 31u ? 31u : b));
 }
-static UI_NOINLINE uint16_t ps_mix(uint16_t a, uint16_t b, uint32_t t)                          /* RGB565 blend, t 0..256 */
+static UI_SMALL uint16_t ps_mix(uint16_t a, uint16_t b, uint32_t t)                          /* RGB565 blend, t 0..256 */
 {
     uint32_t r = (((a >> 11) & 31u) * (256u - t) + ((b >> 11) & 31u) * t) >> 8, g = (((a >> 5) & 63u) * (256u - t) + ((b >> 5) & 63u) * t) >> 8, bl = ((a & 31u) * (256u - t) + (b & 31u) * t) >> 8;
     return (uint16_t)((r << 11) | (g << 5) | bl);
 }
-static UI_NOINLINE void p_R(int32_t x, int32_t y, int32_t w, int32_t h, uint16_t c) { cv_rect(x, y, w < 1 ? 1 : w, h < 1 ? 1 : h, c); }
-static UI_NOINLINE void q_pixelize(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t bs)   /* pixel art for a background: blocks of bs x bs take the colour of their corner, the low bit dithers (scene coordinates) */
+static UI_SMALL void p_R(int32_t x, int32_t y, int32_t w, int32_t h, uint16_t c) { cv_rect(x, y, w < 1 ? 1 : w, h < 1 ? 1 : h, c); }
+static UI_SMALL void q_pixelize(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t bs)   /* pixel art for a background: blocks of bs x bs take the colour of their corner, the low bit dithers (scene coordinates) */
 {
     static const uint8_t BY[16] = {0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5};
     int32_t cy, x;
@@ -46,7 +46,7 @@ static UI_NOINLINE void q_pixelize(int32_t x0, int32_t y0, int32_t x1, int32_t y
         }
     }
 }
-static UI_NOINLINE void p_ell(int32_t cx, int32_t cy, int32_t rx, int32_t ry, uint16_t c)
+static UI_SMALL void p_ell(int32_t cx, int32_t cy, int32_t rx, int32_t ry, uint16_t c)
 {
     int32_t dy;
     if (ry < 1) ry = 1;
@@ -55,12 +55,12 @@ static UI_NOINLINE void p_ell(int32_t cx, int32_t cy, int32_t rx, int32_t ry, ui
         cv_rect(cx - w, cy + dy, 2 * w + 1, 1, c);
     }
 }
-static UI_NOINLINE void p_ellO(int32_t cx, int32_t cy, int32_t rx, int32_t ry, uint16_t c)
+static UI_SMALL void p_ellO(int32_t cx, int32_t cy, int32_t rx, int32_t ry, uint16_t c)
 {
     int32_t k, n = q_max(8, q_max(rx, ry) * 3 / 2);
     for (k = 0; k < n; k++) cv_pset(cx + qcos(k * 64 / n) * rx / 127, cy + qsin(k * 64 / n) * ry / 127, c);
 }
-static UI_NOINLINE void p_poly(const int32_t (*P)[2], int32_t n, uint16_t c)
+static UI_SMALL void p_poly(const int32_t (*P)[2], int32_t n, uint16_t c)
 {
     int32_t y, y0 = 9999, y1 = -9999, i;
     for (i = 0; i < n; i++) { y0 = q_min(y0, P[i][1]); y1 = q_max(y1, P[i][1]); }
@@ -74,17 +74,17 @@ static UI_NOINLINE void p_poly(const int32_t (*P)[2], int32_t n, uint16_t c)
         for (a = 0; a + 1 < m; a += 2) if (xs[a + 1] > xs[a]) cv_rect(xs[a], y, xs[a + 1] - xs[a], 1, c);
     }
 }
-static UI_NOINLINE void p_tri(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t x2, int32_t y2, uint16_t c)
+static UI_SMALL void p_tri(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t x2, int32_t y2, uint16_t c)
 {
     const int32_t P[3][2] = {{x0, y0}, {x1, y1}, {x2, y2}};
     p_poly(P, 3, c);
 }
-static UI_NOINLINE void p_quad(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t x2, int32_t y2, int32_t x3, int32_t y3, uint16_t c)
+static UI_SMALL void p_quad(int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t x2, int32_t y2, int32_t x3, int32_t y3, uint16_t c)
 {
     const int32_t P[4][2] = {{x0, y0}, {x1, y1}, {x2, y2}, {x3, y3}};
     p_poly(P, 4, c);
 }
-static UI_NOINLINE void p_sky(int32_t y0, int32_t y1, const uint8_t *cols, int32_t n)           /* bands with a 2-row checker at each border (the lab's g.sky) */
+static UI_SMALL void p_sky(int32_t y0, int32_t y1, const uint8_t *cols, int32_t n)           /* bands with a 2-row checker at each border (the lab's g.sky) */
 {
     int32_t k, x, r;
     for (k = 0; k < n; k++) {
@@ -93,27 +93,27 @@ static UI_NOINLINE void p_sky(int32_t y0, int32_t y1, const uint8_t *cols, int32
         if (k) for (r = 0; r < 2; r++) for (x = r; x < 240; x += 2) cv_pset(x, a + r, QP(cols[k - 1]));
     }
 }
-static UI_NOINLINE void p_hero(uint32_t id, int32_t cx, int32_t feet, int32_t s, int solid)    /* a hero sprite, feet on `feet`, centred on cx */
+static UI_SMALL void p_hero(uint32_t id, int32_t cx, int32_t feet, int32_t s, int solid)    /* a hero sprite, feet on `feet`, centred on cx */
 {
     const qspr_t *sp = &QSPR[id];
     q_spr(id, cx - s * (sp->ox + sp->w / 2), feet - s * (sp->oy + sp->h), s, 0, solid);
 }
-static UI_NOINLINE int32_t p_lerp(int32_t a, int32_t b, int32_t u1000) { return a + (b - a) * u1000 / 1000; }
-static UI_NOINLINE int32_t p_ease(int32_t u) { u = u < 0 ? 0 : u > 1000 ? 1000 : u; return u * u / 1000 * (3000 - 2 * u) / 1000; }
+static UI_SMALL int32_t p_lerp(int32_t a, int32_t b, int32_t u1000) { return a + (b - a) * u1000 / 1000; }
+static UI_SMALL int32_t p_ease(int32_t u) { u = u < 0 ? 0 : u > 1000 ? 1000 : u; return u * u / 1000 * (3000 - 2 * u) / 1000; }
 static const uint16_t PX_INK = RGB(0x1a, 0x10, 0x16);
 
 /* ======================================================= ENV: the forge ======================================================= */
 static struct { uint32_t cyc; int32_t heat, n, bx0, bx1, by0, by1; struct { int16_t x, y, vx, vy, vz; uint32_t t0; } sp[20]; } pf;
-static UI_NOINLINE int32_t pf_xh(uint32_t cyc) { return 90 + (int32_t)p_hs(cyc * 7u) * 62 / 1024; }
-static UI_NOINLINE int32_t pf_ph(uint32_t t) { return (int32_t)(t % 1500u) * 1000 / 1500; }      /* 0..1000 of the strike */
-static UI_NOINLINE void pf_hammer(uint32_t t, int32_t *hx, int32_t *hy, int32_t *px, int32_t *py, int32_t *th)
+static UI_SMALL int32_t pf_xh(uint32_t cyc) { return 90 + (int32_t)p_hs(cyc * 7u) * 62 / 1024; }
+static UI_SMALL int32_t pf_ph(uint32_t t) { return (int32_t)(t % 1500u) * 1000 / 1500; }      /* 0..1000 of the strike */
+static UI_SMALL void pf_hammer(uint32_t t, int32_t *hx, int32_t *hy, int32_t *px, int32_t *py, int32_t *th)
 {
     int32_t ph = pf_ph(t), xh = pf_xh(t / 1500u), L = 78;
     *th = ph < 120 ? p_lerp(-1200, 500, ph * 1000 / 120) : ph < 300 ? p_lerp(500, 150, p_ease((ph - 120) * 1000 / 180)) : p_lerp(150, -1200, p_ease((ph - 300) * 1000 / 700));
     *px = xh + 34, *py = 110 - 61 - 6;
     *hx = *px - L * p_sinr(*th) / 127, *hy = *py + L * p_cosr(*th) / 127;
 }
-static UI_NOINLINE void pf_tick(const ps_c *c)
+static UI_SMALL void pf_tick(const ps_c *c)
 {
     uint32_t cyc = c->t / 1500u;
     int32_t i;
@@ -128,7 +128,7 @@ static UI_NOINLINE void pf_tick(const ps_c *c)
     pf.heat = pf.heat * 94 / 100;
     pf.bx0 = pf.bx1 = 0;
 }
-static UI_NOINLINE void ps_forge(const ps_c *c)
+static UI_SMALL void ps_forge(const ps_c *c)
 {
     int32_t k0 = c->k[0], A = 60 + k0 * 3 / 10, D = 60 + c->k[1] * 3 / 10, S = 200 + c->k[2] * 7 / 10, Rl = 100 + c->k[3] * 45 / 100, r, cc, i, xh = pf_xh(c->t / 1500u);
     int32_t fl = 700 + 300 * p_sin(c->t, 130) / 127 * p_sin(c->t, 70) / 127, hx, hy, px, py, th, nx, ny;
@@ -165,7 +165,7 @@ static UI_NOINLINE void ps_forge(const ps_c *c)
       str_cpy(b, "S ", 4), fmt_int(b + 2, S / 10), str_cpy(b + str_len(b), "%  R ", 8), fmt_int(b + str_len(b), 30 + c->k[3] * 1200 / 1000), str_cpy(b + str_len(b), "ms", 4); q_text(18, 172, b, Q_TEXT);
       q_text(176, 158, "heat", Q_DIM); p_R(176, 178, 46, 4, Q_OFF); p_R(176, 178, 46 * q_min(1000, pf.heat) / 1000, 4, QP(9)); }
 }
-static UI_NOINLINE uint32_t ps_forge_dirty(const ps_c *c, ps_r *o)
+static UI_SMALL uint32_t ps_forge_dirty(const ps_c *c, ps_r *o)
 {
     int32_t hx, hy, px, py, th, i, x0 = 999, y0 = 999, x1 = -1, y1 = -1;
     pf_hammer(c->t, &hx, &hy, &px, &py, &th);
@@ -182,7 +182,7 @@ static UI_NOINLINE uint32_t ps_forge_dirty(const ps_c *c, ps_r *o)
     return 5;
 }
 /* ---- stars of three kinds: a twinkling dot, a small plus, a bright four-pointed one (RPG skies) ---- */
-static UI_NOINLINE void q_stars(int32_t n, int32_t y0, int32_t ymax, uint32_t seed)
+static UI_SMALL void q_stars(int32_t n, int32_t y0, int32_t ymax, uint32_t seed)
 {
     int32_t i;
     for (i = 0; i < n; i++) {
@@ -195,12 +195,12 @@ static UI_NOINLINE void q_stars(int32_t n, int32_t y0, int32_t ymax, uint32_t se
         else { p_R(x - 2, y, 5, 1, RGB(0xff, 0xf0, 0xb0)), p_R(x, y - 2, 1, 5, RGB(0xff, 0xf0, 0xb0)); if (ph < 3u) cv_pset(x + 1, y - 1, RGB(0xff, 0xff, 0xff)); }   /* a bright one */
     }
 }
-static UI_NOINLINE int p_vis(int32_t x0, int32_t y0, int32_t x1, int32_t y1)                    /* does a rectangle touch the window being painted? */
+static UI_SMALL int p_vis(int32_t x0, int32_t y0, int32_t x1, int32_t y1)                    /* does a rectangle touch the window being painted? */
 {
     int32_t wx0 = -cv_ox, wy0 = -cv_oy;
     return x1 >= wx0 && x0 < wx0 + (int32_t)cv_w && y1 >= wy0 && y0 < wy0 + (int32_t)cv_h;
 }
-static UI_NOINLINE int32_t p_wv(int32_t s, int32_t p)                                           /* a waveform at p (Q1000 cycles): -1000..1000 */
+static UI_SMALL int32_t p_wv(int32_t s, int32_t p)                                           /* a waveform at p (Q1000 cycles): -1000..1000 */
 {
     p %= 1000;
     if (p < 0) p += 1000;
@@ -213,7 +213,7 @@ static UI_NOINLINE int32_t p_wv(int32_t s, int32_t p)                           
     }
 }
 /* ======================================================= LFO: the sea ======================================================= */
-static UI_NOINLINE void ps_sea(const ps_c *c)
+static UI_SMALL void ps_sea(const ps_c *c)
 {
     static const uint8_t SKY[5] = {0, 1, 1, 2, 13};
     int32_t rate = 200 + c->k[0] * 6, shape = c->a, ph0 = c->k[2], fade = c->k[3], x, i, sx = 120, y0, y1, p0, tilt;
@@ -231,9 +231,9 @@ static UI_NOINLINE void ps_sea(const ps_c *c)
     p_quad(sx - 18, y0 - 6 + tilt, sx + 18, y0 - 6 - tilt, sx + 12, y0 + 2 - tilt, sx - 12, y0 + 2 + tilt, QP(4)), p_R(sx - 1, y0 - 30, 2, 26, QP(4));
     p_tri(sx + 2, y0 - 29, sx + 16, y0 - 12, sx + 2, y0 - 12, QP(7)), p_tri(sx - 2, y0 - 26, sx - 12, y0 - 12, sx - 2, y0 - 12, QP(15));
 }
-static UI_NOINLINE uint32_t ps_sea_dirty(const ps_c *c, ps_r *o) { (void)c; o[0] = (ps_r){0, 82, 239, 150, 0}; return 1; }
+static UI_SMALL uint32_t ps_sea_dirty(const ps_c *c, ps_r *o) { (void)c; o[0] = (ps_r){0, 82, 239, 150, 0}; return 1; }
 /* ======================================================= LFO DEST: the alchemist's brew ======================================================= */
-static UI_NOINLINE void ps_alch(const ps_c *c)
+static UI_SMALL void ps_alch(const ps_c *c)
 {
     static const uint8_t SKY[5] = {0, 0, 1, 1, 0};
     static const char *const DST[4] = {"pitch", "filter", "shape", "amp"}, *const SH[4] = {"sine", "tri", "saw", "square"};
@@ -271,14 +271,14 @@ static UI_NOINLINE void ps_alch(const ps_c *c)
     p_R(168, 70, 58, 1, Q_LINE);
     { int32_t px = (int32_t)((uint32_t)tq * (uint32_t)rate / 2000u % 58u), vv = p_wv(shape, px * 2000 / 58 * (500 + rate / 8) / 1000) * depth / 1000; p_R(168 + px, 70 - vv * 10 / 1000 - 1, 3, 3, QP(10)); }
 }
-static UI_NOINLINE uint32_t ps_alch_dirty(const ps_c *c, ps_r *o)
+static UI_SMALL uint32_t ps_alch_dirty(const ps_c *c, ps_r *o)
 {
     (void)c;
     o[0] = (ps_r){30, 24, 215, 112, 0}; o[1] = (ps_r){80, 140, 175, 172, 0};
     return 2;
 }
 /* ======================================================= SLICER: houses become towers ======================================================= */
-static UI_NOINLINE int32_t pt_val(const ps_c *c, int32_t i)
+static UI_SMALL int32_t pt_val(const ps_c *c, int32_t i)
 {
     int32_t mode = c->a, pat = c->b, v;
     if (mode == 0) return 100;
@@ -288,7 +288,7 @@ static UI_NOINLINE int32_t pt_val(const ps_c *c, int32_t i)
 }
 static int16_t pt_disp[16];                                                        /* the height each tower shows now (it walks to pt_val) */
 static uint8_t pt_ok;
-static UI_NOINLINE int pt_step(const ps_c *c)                                     /* the towers that are too tall shrink first, then the new ones rise; a new pattern in the middle just retargets */
+static UI_SMALL int pt_step(const ps_c *c)                                     /* the towers that are too tall shrink first, then the new ones rise; a new pattern in the middle just retargets */
 {
     int32_t i, down = 0, moving = 0;
     for (i = 0; i < 16; i++) {
@@ -305,12 +305,12 @@ static UI_NOINLINE int pt_step(const ps_c *c)                                   
     }
     return moving;
 }
-static UI_NOINLINE int32_t pt_play(const ps_c *c)
+static UI_SMALL int32_t pt_play(const ps_c *c)
 {
     static const uint16_t RT[6] = {200, 400, 800, 267, 533, 1067};
     return (int32_t)(c->t * RT[c->d % 6] / 100000u % 16u);
 }
-static UI_NOINLINE void ps_towers(const ps_c *c)
+static UI_SMALL void ps_towers(const ps_c *c)
 {
     static const uint8_t SKY[5] = {0, 0, 1, 1, 2};
     int32_t mode = c->a, i, q, y, play = pt_play(c);
@@ -337,7 +337,7 @@ static UI_NOINLINE void ps_towers(const ps_c *c)
         }
     }
 }
-static UI_NOINLINE uint32_t ps_towers_dirty(const ps_c *c, ps_r *o)
+static UI_SMALL uint32_t ps_towers_dirty(const ps_c *c, ps_r *o)
 {
     int32_t i, play = pt_play(c), v = pt_disp[play], x = 6 + play * 145 / 10, hgt = 8 + v * 78 / 1000;
     o[0] = (ps_r){(int16_t)(x - 6), (int16_t)(168 - hgt - 64), (int16_t)(x + 24), 175, 0};
@@ -346,7 +346,7 @@ static UI_NOINLINE uint32_t ps_towers_dirty(const ps_c *c, ps_r *o)
     return 2;
 }
 /* ======================================================= DLY: echoes in the forest ======================================================= */
-static UI_NOINLINE void ps_forest(const ps_c *c)
+static UI_SMALL void ps_forest(const ps_c *c)
 {
     static const uint8_t SKY[5] = {0, 0, 1, 1, 2};
     int32_t n = 1 + (c->k[1] * 4 + 500) / 1000, gap = 30 + c->k[0] * 18 / 1000, ph = (int32_t)(c->t * 45u / 100u % 1000u), i, y, r;
@@ -374,9 +374,9 @@ static UI_NOINLINE void ps_forest(const ps_c *c)
     if (pn_t0 && c->t - pn_t0 < 1700u)                                                 /* a key was pressed: its ring, then the echoes, one every delay time */
         for (r = 0; r < n + 1; r++) { int32_t a = (int32_t)(c->t - pn_t0) - r * (130 + gap * 6), u; if (a < 0 || a > 900) continue; u = a * 1000 / 900; p_ellO(40 + u * 170 / 1000, 176, 8 + u * 30 / 1000, 3 + u * 8 / 1000, QP(r ? 14 : 7)); }
 }
-static UI_NOINLINE uint32_t ps_forest_dirty(const ps_c *c, ps_r *o) { (void)c; o[0] = (ps_r){14, 56, 232, 193, 0}; return 1; }
+static UI_SMALL uint32_t ps_forest_dirty(const ps_c *c, ps_r *o) { (void)c; o[0] = (ps_r){14, 56, 232, 193, 0}; return 1; }
 /* ======================================================= REV/CHO: the cathedral ======================================================= */
-static UI_NOINLINE void ps_cathedral(const ps_c *c)
+static UI_SMALL void ps_cathedral(const ps_c *c)
 {
     static const uint8_t GL[6] = {12, 8, 10, 11, 13, 14};
     int32_t nw = 2 + (c->k[0] * 2 + 500) / 1000, damp = c->k[1], nch = 1 + (c->k[3] * 3 + 500) / 1000, dim = 1000 - damp * 450 / 1000, FL = 168, sp = 240 / nw, ww = q_min(46, sp - 22), wt = 26, wh = FL - wt - 12;
@@ -417,16 +417,16 @@ static UI_NOINLINE void ps_cathedral(const ps_c *c)
         p_hero(Q_HERO[2] + (uint32_t)((c->t / 500u) & 1u), hx + 17, FL + 4, 2, cc ? 13 : -1);
     }
 }
-static UI_NOINLINE uint32_t ps_cathedral_dirty(const ps_c *c, ps_r *o) { (void)c; o[0] = (ps_r){40, 112, 200, 176, 0}; o[1] = (ps_r){0, 38, 239, 166, 5}; return 2; }
+static UI_SMALL uint32_t ps_cathedral_dirty(const ps_c *c, ps_r *o) { (void)c; o[0] = (ps_r){40, 112, 200, 176, 0}; o[1] = (ps_r){0, 38, 239, 166, 5}; return 2; }
 /* ======================================================= SCL: the torch wall ======================================================= */
 static const uint16_t PT_SCL[16] = {0xFFF, 0xAB5, 0x5AD, 0x6B5, 0x6AD, 0x295, 0x215, 0x9AD, 0x5AB, 0xAD5, 0x56B, 0x5AD, 0x4A9, 0xAAA, 0xB6D, 0x6DB};
-static UI_NOINLINE int pt_lit(const ps_c *c, int32_t n, int32_t *black, int32_t *root)
+static UI_SMALL int pt_lit(const ps_c *c, int32_t n, int32_t *black, int32_t *root)
 {
     int32_t note = n, rel = (note - c->a + 12) % 12, in = (PT_SCL[c->b & 15] >> rel) & 1, bl = n == 1 || n == 3 || n == 6 || n == 8 || n == 10, qn = c->c;
     *black = bl, *root = note == c->a;
     return qn == 0 ? 1 : qn == 2 ? in && !bl : in;
 }
-static UI_NOINLINE void ps_torch(const ps_c *c)
+static UI_SMALL void ps_torch(const ps_c *c)
 {
     static const char *const NN[12] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
     int32_t r, cc, n, i, px, py, ch = c->d;
@@ -455,7 +455,7 @@ static UI_NOINLINE void ps_torch(const ps_c *c)
         if (ch && rt) for (i = 0; i < ch + 2; i++) { int32_t a = (int32_t)(c->t * 500u / 1000u % 1000u) + i * 166; a %= 1000; p_R(x + qsin(a * 7 / 1000 * 64 / 6 + i * 5) * 6 / 127, y - 16 - a * 30 / 1000, 3, 3, QP(6)); }
     }
 }
-static UI_NOINLINE uint32_t ps_torch_dirty(const ps_c *c, ps_r *o)
+static UI_SMALL uint32_t ps_torch_dirty(const ps_c *c, ps_r *o)
 {
     int32_t n, m = 0;
     for (n = 0; n < 12; n++) {
@@ -466,7 +466,7 @@ static UI_NOINLINE uint32_t ps_torch_dirty(const ps_c *c, ps_r *o)
     return (uint32_t)m;
 }
 /* ======================================================= FX: four stompboxes, each with its own little animation ======================================================= */
-static UI_NOINLINE void ps_pedals(const ps_c *c)
+static UI_SMALL void ps_pedals(const ps_c *c)
 {
     static const uint8_t SKY[3] = {0, 1, 0}, COL[4] = {8, 12, 11, 13};
     static const char *const NM[4] = {"dist", "chorus", "delay", "reverb"};
@@ -515,7 +515,7 @@ static UI_NOINLINE void ps_pedals(const ps_c *c)
         }
     }
 }
-static UI_NOINLINE uint32_t ps_pedals_dirty(const ps_c *c, ps_r *o)
+static UI_SMALL uint32_t ps_pedals_dirty(const ps_c *c, ps_r *o)
 {
     int32_t i;
     for (i = 0; i < 4; i++) o[i] = (ps_r){(int16_t)(9 + i * 58), 22, (int16_t)(9 + i * 58 + 50), 98, 0};
@@ -523,7 +523,7 @@ static UI_NOINLINE uint32_t ps_pedals_dirty(const ps_c *c, ps_r *o)
     return 4;
 }
 /* ======================================================= the driver: pages -> scenes, first paint, then only what moves ======================================================= */
-static UI_NOINLINE int q_page_scene(void)                                                           /* the scene of the page on screen, or -1 */
+static UI_SMALL int q_page_scene(void)                                                           /* the scene of the page on screen, or -1 */
 {
     const page_t *p = cur_page();
     if (ui.home) return -1;
@@ -541,7 +541,7 @@ static UI_NOINLINE int q_page_scene(void)                                       
 }
 typedef void (*ps_draw)(const ps_c *);
 typedef uint32_t (*ps_dirty)(const ps_c *, ps_r *);
-static UI_NOINLINE void ps_paint(ps_draw fn, const ps_c *c, int32_t x0, int32_t y0, int32_t x1, int32_t y1)   /* paint a rectangle of the screen (scene rows only) */
+static UI_SMALL void ps_paint(ps_draw fn, const ps_c *c, int32_t x0, int32_t y0, int32_t x1, int32_t y1)   /* paint a rectangle of the screen (scene rows only) */
 {
     int32_t rows, y, w;
     if (x0 < 0) x0 = 0;
@@ -559,7 +559,7 @@ static UI_NOINLINE void ps_paint(ps_draw fn, const ps_c *c, int32_t x0, int32_t 
         cv_blit((uint32_t)x0, (uint32_t)y);
     }
 }
-static UI_NOINLINE void quest_page_draw(void)
+static UI_SMALL void quest_page_draw(void)
 {
     static const ps_draw FN[8] = {ps_forge, ps_sea, ps_alch, ps_towers, ps_forest, ps_cathedral, ps_torch, ps_pedals};
     static const ps_dirty DF[8] = {ps_forge_dirty, ps_sea_dirty, ps_alch_dirty, ps_towers_dirty, ps_forest_dirty, ps_cathedral_dirty, ps_torch_dirty, ps_pedals_dirty};
@@ -631,7 +631,7 @@ static UI_NOINLINE void quest_page_draw(void)
 /* ======================================================= VISUALIZER (menu): six pages driven by the four tracks' real output levels ======================================================= */
 static const uint16_t PV_HC[4] = {RGB(0xf0, 0xc8, 0x60), RGB(0x7a, 0xb0, 0x4e), RGB(0xe0, 0x8a, 0x3a), RGB(0x5a, 0x8a, 0xd0)};
 static struct { int32_t e[4], v[16], b[40], beat; uint32_t pk[4]; } pv;
-static UI_NOINLINE void pv_tick(uint32_t t)                                                   /* levels 0..1000 from the tracks' peaks (read and cleared, like the TRACKS meters) */
+static UI_SMALL void pv_tick(uint32_t t)                                                   /* levels 0..1000 from the tracks' peaks (read and cleared, like the TRACKS meters) */
 {
     uint32_t i;
     for (i = 0; i < 4u; i++) {
@@ -646,7 +646,7 @@ static UI_NOINLINE void pv_tick(uint32_t t)                                     
 #ifndef FELUCCA_VIZ_FULL
 #define FELUCCA_VIZ_FULL 0   /* 1 = the two heaviest pages, Sky (1.4 KB) and Campfire (1.0 KB), are built too: 6 pages instead of 4 */
 #endif
-static UI_NOINLINE void pv_sky(const ps_c *c)
+static UI_SMALL void pv_sky(const ps_c *c)
 {
     static const uint8_t SKY[6] = {0, 0, 1, 1, 2, 13};
     int32_t i, x, y, cx, nb = 12, bass = (1000 - (1000 - c->a)) * 600 / 1000, mr = 14 + bass * 4 / 1000, tq = (int32_t)(c->t % 60000u), bw = 240 / nb;
@@ -674,7 +674,7 @@ static UI_NOINLINE void pv_sky(const ps_c *c)
     p_R(0, 128, 240, 1, QP(13));
 }
 
-static UI_NOINLINE void pv_tides(const ps_c *c)
+static UI_SMALL void pv_tides(const ps_c *c)
 {
     static const uint8_t SKY[5] = {0, 0, 1, 1, 2};
     static const char *const N[4] = {"MAGE", "ARCHER", "CLERIC", "WARRIOR"};
@@ -689,7 +689,7 @@ static UI_NOINLINE void pv_tides(const ps_c *c)
         q_text(6, y0 - 22, N[i], PV_HC[i]);
     }
 }
-static UI_NOINLINE void pv_ring(const ps_c *c)
+static UI_SMALL void pv_ring(const ps_c *c)
 {
     int32_t i, a, cx = 120, cy = 108;
     p_R(0, PS_Y0, 240, 178, RGB(0x0c, 0x0a, 0x14));
@@ -699,7 +699,7 @@ static UI_NOINLINE void pv_ring(const ps_c *c)
     }
     p_ell(cx, cy, 6 + c->a * 6 / 1000, 6 + c->a * 6 / 1000, RGB(0xff, 0xf6, 0xd8)), p_ell(cx, cy, 3, 3, QP(10));
 }
-static UI_NOINLINE void pv_canyon(const ps_c *c)
+static UI_SMALL void pv_canyon(const ps_c *c)
 {
     int32_t i;
     p_R(0, PS_Y0, 240, 178, RGB(0x0a, 0x08, 0x14)), p_R(0, PS_Y0, 240, 80, RGB(0x1a, 0x12, 0x30));
@@ -710,7 +710,7 @@ static UI_NOINLINE void pv_canyon(const ps_c *c)
     }
     p_R(0, 108, 240, 2, RGB(0x3a, 0x30, 0x50));
 }
-static UI_NOINLINE void pv_scope(const ps_c *c)
+static UI_SMALL void pv_scope(const ps_c *c)
 {
     int32_t x, i, py = 108;
     p_R(0, PS_Y0, 240, 178, RGB(0x06, 0x14, 0x0c));
@@ -729,7 +729,7 @@ static UI_NOINLINE void pv_scope(const ps_c *c)
     }
 }
 #if FELUCCA_VIZ_FULL
-static UI_NOINLINE void pv_fire(const ps_c *c)
+static UI_SMALL void pv_fire(const ps_c *c)
 {
     static const uint8_t SKY[5] = {0, 0, 1, 1, 2};
     static const uint16_t FL[5] = {RGB(0xa8, 0x32, 0x2a), RGB(0xe0, 0x60, 0x2a), RGB(0xf6, 0xa2, 0x3a), RGB(0xff, 0xd8, 0x78), RGB(0xff, 0xf6, 0xd8)};
@@ -758,12 +758,12 @@ static UI_NOINLINE void pv_fire(const ps_c *c)
 static const ps_r PV_R[5] = {{0, 19, 239, 196, 0}, {0, 19, 239, 196, 0}, {40, 30, 200, 190, 0}, {0, 28, 239, 160, 0}, {0, 19, 239, 196, 0}};
 static const ps_draw PV_FN[5] = {pv_sky, pv_tides, pv_ring, pv_canyon, pv_scope};
 static const char *const PV_NM[5] = {"Sky", "Tides", "Ring", "Canyon", "Scope"};
-static UI_NOINLINE uint32_t pv_dirty(uint32_t page, ps_r *o)
+static UI_SMALL uint32_t pv_dirty(uint32_t page, ps_r *o)
 {
     o[0] = PV_R[page % PV_N];
     return 1;
 }
-static UI_NOINLINE void quest_viz_draw(void)
+static UI_SMALL void quest_viz_draw(void)
 {
     static uint32_t last_ms, last_pg = 99;
     ps_c c;
@@ -1021,7 +1021,7 @@ static const char *gm_rank(void)
     uint32_t pct = gm.n ? gm.hit * 100u / gm.n : 0u;
     return pct >= 95u ? "S" : pct >= 85u ? "A" : pct >= 70u ? "B" : pct >= 50u ? "C" : "D";
 }
-static UI_NOINLINE void quest_games_draw(void)
+static UI_SMALL void quest_games_draw(void)
 {
     static const char *const KN[2] = {"Piano", "FM Hero"};
     char b[28];
@@ -1055,7 +1055,7 @@ static UI_NOINLINE void quest_games_draw(void)
         flipping = cov_from != 255u && fm1_ms - cov_t0 < 420u;
         if (cov_from != 255u && !flipping) cov_from = 255, qs.sig[0] = 0;               /* done: the still cover and its arrows */
         if (flipping || q_changed(0, 41u + gm.kind)) {
-            static uint8_t cb[3600];
+            uint8_t *const cb = &cd_tex[0][0];                           /* (the pool buffer the CDs use: 3600 of its 4096 B) */
             const uint32_t a = flipping ? (fm1_ms - cov_t0) * 32u / 420u : 0u, face = flipping && a < 16u ? cov_from : gm.kind;
             const int32_t cw = flipping ? (qcos((int32_t)a) < 0 ? -qcos((int32_t)a) : qcos((int32_t)a)) * 240 / 127 : 240, x0 = 120 - cw / 2;
             const uint8_t *z = face ? QCOVER_FM_0 : QCOVER_PIANO_0, *ze = z + (face ? sizeof QCOVER_FM_0 : sizeof QCOVER_PIANO_0);

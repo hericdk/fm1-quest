@@ -61,6 +61,7 @@
     };
     vid.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:fill;image-rendering:pixelated;z-index:9998;background:#000';
     box.append(vid, cv); cv.style.background = 'transparent'; vid.play().catch(() => {});
+    W.screen = cv; W.vid = vid;                                                         // (the floating recorder of the page reads these)
     const keep = setInterval(() => { if (!vid.isConnected) { clearInterval(keep); return; } if (vid.paused) vid.play().catch(() => {}); }, 700);
     const x = cv.getContext('2d'), img = x.createImageData(240, 240);
     const say = (a, b) => { x.fillStyle = '#000'; x.fillRect(0, 0, 240, 240); x.fillStyle = '#f0c860'; x.font = '16px monospace'; x.textAlign = 'center'; x.fillText(a, 120, 112); x.fillStyle = '#a89080'; x.font = '10px monospace'; x.fillText(b, 120, 134); };
@@ -86,6 +87,7 @@
           else if (m.t === 'flash') saveFlash(m.data);
         };
         W.node.connect(W.ctx.destination);
+        try { W.tap = W.ctx.createMediaStreamDestination(); W.node.connect(W.tap); } catch (e) {}      // a copy of the sound for the recorder
         await W.ctx.resume();
         send({ t: 'adc', ch: 4, v: W.master });
         setTimeout(() => send({ t: 'start' }), 900);

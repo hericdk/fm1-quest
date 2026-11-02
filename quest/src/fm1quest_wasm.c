@@ -38,6 +38,7 @@ static void fm1_irq_on(void) {}
 #define FM1_NKEY 41u              /* ids: 0..13 buttons, 14..40 note keys */
 #define FM1_NENC 7u
 enum { FM1_BTN_OCT_DOWN = 0, FM1_BTN_OCT_UP = 1 };
+static volatile uint32_t fm1_remote_btn;   /* (SLOOP 2.7) GLO > MIDI 3 > REMOTE: buttons held over MIDI (ui_input.c remote_poll) */
 
 static const int8_t FM1_KEYMAP[6][FM1_NCOL] = {
     {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
@@ -214,6 +215,11 @@ static volatile uint32_t emu_flash_gen;
 #include "params.c"
 #include "voice.c"
 #include "slicer.c"
+#include "cpu1.h"                        /* (SLOOP 2.7) no second core in the browser: every unit renders here */
+static int cpu1_run(cpu1_job_t fn, uint32_t arg) { (void)fn; (void)arg; return 0; }
+static int cpu1_wait(void) { return 0; }
+static int cpu1_on(void) { return 0; }
+static uint32_t cpu1_ticks(void) { return 0; }
 #include "fx.c"
 #define FELUCCA_OTA 0
 #define FELUCCA_CDC 0
@@ -270,6 +276,7 @@ static int st_prog(uint32_t off, const void *src, uint32_t n)
     emu_flash_gen++;
     return 0;
 }
+#define ST_XIP_PTR(off) (emu_flash + ((uint32_t)(off) - EMU_FLASH_BASE))   /* storage.c st_xip: an object read in place */
 #include "storage.c"
 #include "upreset.c"
 #include "project.c"

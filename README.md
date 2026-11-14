@@ -112,3 +112,5 @@ Creator: **Hericdk** · YouTube [@_heric](https://www.youtube.com/@_heric) · In
 ## Licence
 
 GPL-3.0-only (see `LICENSE` and `LICENSING.md`). The "style" request in `AI-README.md` is a request from the author, not a licence term.
+
+You can also try FM1 Quest in the browser, no flashing needed, in the free community [FM-1 Emulator](https://fm1-emulator.atst.tools/).
